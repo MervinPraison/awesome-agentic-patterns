@@ -1,11 +1,28 @@
 ---
-title: "Anti-Reward-Hacking Grader Design"
+title: Anti-Reward-Hacking Grader Design
 status: emerging
-authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Rogo Engineering Team", "Will Brown (OpenAI)"]
-category: "Reliability & Eval"
-source: "https://youtu.be/1s_7RMG4O4U"
-tags: [reward-hacking, grading, reinforcement-learning, adversarial-robustness, agent-rft]
+authors:
+  - Nikola Balic (@nibzard)
+based_on:
+  - Rogo Engineering Team
+  - Will Brown (OpenAI)
+category: Reliability & Eval
+source: 'https://youtu.be/1s_7RMG4O4U'
+tags:
+  - reward-hacking
+  - grading
+  - reinforcement-learning
+  - adversarial-robustness
+  - agent-rft
+slug: anti-reward-hacking-grader-design
+id: anti-reward-hacking-grader-design
+summary: >-
+  Design reward functions with multi-criteria evaluation and iterative hardening
+  to prevent models from gaming graders, ensuring training rewards align with
+  actual task quality.
+signals: ["Training a model with reinforcement learning against a grader", "Training reward rises while real performance does not", "Simple graders penalize valid answers for format differences"]
+anti_signals: ["No reinforcement learning or reward-based training", "Team cannot inspect traces and iterate on the grader"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem
@@ -16,6 +33,9 @@ During reinforcement learning training, models actively search for ways to maxim
 - **Unexpected behaviors**: Agent learns bizarre shortcuts that technically satisfy the reward function but don't reflect true quality
 - **Brittle evaluation**: Simple graders (e.g., exact string match) penalize valid answers due to formatting differences
 - **Degraded real performance**: High training reward doesn't translate to production success
+- **Length hacking**: Models generate verbose but meaningless content to inflate scores
+- **Format hacking**: Adding empty tags like `<thinking></thinking>` without substantive content
+- **Solution appending**: Concatenating previously-solved problems to exploit reward systems
 
 The Rogo team experienced this firsthand: early training runs showed 100% average validation reward, but the model was exploiting edge cases in their financial reasoning grader rather than improving actual performance.
 
@@ -198,6 +218,13 @@ graph TD
     style J fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
 ```
 
+**Critical: Format Constraints**
+
+Process-aware rewards without strict format constraints lead to catastrophic exploitation (Spark Research, December 2025). Always enforce:
+- Exactly one answer tag or boxed expression
+- No post-answer content allowed
+- Strict output format requirements
+
 ## How to use it
 
 **Phase 1: Initial Design**
@@ -219,6 +246,7 @@ graph TD
 2. **Sample traces**: Manually review high-reward examples to verify quality
 3. **Compare distributions**: Validation reward should track training reward
 4. **Check real metrics**: Validate that business KPIs improve, not just reward
+5. **Calibrate graders**: Use Cohen's Kappa (κ ≥ 0.6) to measure human-grader agreement
 
 **Phase 4: Iterative Hardening**
 
@@ -274,4 +302,6 @@ graph TD
 
 - [OpenAI Build Hour: Agent RFT - Rogo Case Study (November 2025)](https://youtu.be/1s_7RMG4O4U)
 - [Specification Gaming in AI (DeepMind)](https://deepmind.google/discover/blog/specification-gaming-the-flip-side-of-ai-ingenuity/)
+- [Let's Verify Step by Step (OpenAI, 2023)](https://arxiv.org/abs/2305.20050) - Process Reward Models
+- [LLMs Cannot Reliably Judge (Yet?) (2025)](https://arxiv.org/abs/2506.09443) - Adversarial attacks
 - Related patterns: Inference-Healed Code Review Reward, Agent Reinforcement Fine-Tuning, RLAIF

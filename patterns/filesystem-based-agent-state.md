@@ -1,11 +1,26 @@
 ---
 title: Filesystem-Based Agent State
 status: established
-authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Anthropic Engineering Team"]
+authors:
+  - Nikola Balic (@nibzard)
+based_on:
+  - Anthropic Engineering Team
 category: Context & Memory
-source: "https://www.anthropic.com/engineering/code-execution-with-mcp"
-tags: [state-management, persistence, resumption, long-running-tasks]
+source: 'https://www.anthropic.com/engineering/code-execution-with-mcp'
+tags:
+  - state-management
+  - persistence
+  - resumption
+  - long-running-tasks
+slug: filesystem-based-agent-state
+id: filesystem-based-agent-state
+summary: >-
+  Agents persist intermediate results and working state to files, creating durable
+  checkpoints that enable workflow resumption, recovery from failures, and support
+  for long-running tasks.
+signals: ["Multi-step workflows with expensive operations such as API calls or data processing", "Tasks may be interrupted or exceed single-session context limits", "Several agents or sessions build on earlier work"]
+anti_signals: ["Short tasks that finish in one session with cheap steps", "The execution environment has no persistent storage", "Concurrent writers with no file locking or atomic writes"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem
@@ -15,6 +30,12 @@ Many agent workflows are long-running or may be interrupted (by errors, timeouts
 ## Solution
 
 Agents persist intermediate results and working state to files in the execution environment. This creates durable checkpoints that enable workflow resumption, recovery from failures, and support for tasks that exceed single-session context limits.
+
+Instead of treating state as transient prompt text, the workflow externalizes progress into explicit artifacts that any later run can inspect and continue from. This gives agents a resumable execution model and makes failure recovery deterministic.
+
+File-backed state also improves observability: humans can inspect checkpoints, compare intermediate outputs across retries, and diagnose where runs diverged.
+
+Some agents exhibit "proactive state externalization" — writing `SUMMARY.md` or `CHANGELOG.md` without explicit prompting when approaching context limits, treating the filesystem as extended working memory.
 
 **Core pattern:**
 
@@ -126,6 +147,14 @@ workspace/
            print(log_entry)  # Also show in agent context
    ```
 
+4. **Using framework primitives:**
+
+   ```python
+   from langchain.storage import FileStore
+   store = FileStore("agent_memory")
+   store.mset([("step1", step1_data), ("step2", step2_data)])
+   ```
+
 ## Trade-offs
 
 **Pros:**
@@ -153,8 +182,14 @@ workspace/
 - Include timestamps and version info in state files
 - Consider state file size limits (don't checkpoint massive datasets)
 - Secure state files if they contain sensitive data
+- For very large state, use memory-mapped files or efficient serialization (MessagePack)
 
 ## References
 
 * Anthropic Engineering: Code Execution with MCP (2024)
+* Cognition AI: Devin's proactive state externalization to `SUMMARY.md`/`CHANGELOG.md` (2024)
+* LangChain: `FileStore` and `FileBasedCache` for persistent agent memory
 * Related: Episodic Memory pattern (for conversation-level persistence)
+
+- Primary source: https://www.anthropic.com/engineering/code-execution-with-mcp
+- LangChain FileStore: https://github.com/langchain-ai/langchain

@@ -6,12 +6,18 @@ based_on: ["Sourcegraph Team"]
 category: Orchestration & Control
 source: "https://youtu.be/hAEmt-FMyHA?si=6iKcGnTavdQlQKUZ"
 tags: [multi-model, cost-optimization, strategic-reasoning, architecture]
+summary: "Uses a fast, low-cost worker model for most tool use and code generation, and lets it consult an expensive oracle model when it is stuck"
+signals: ["Frontier models are too expensive for all routine work", "Coding tasks include complex debugging or architecture decisions", "Worker can detect when its approach is failing"]
+anti_signals: ["Tasks are routine and the worker model handles them alone", "Latency from model switching is not acceptable"]
+updated_at: "2026-03-11"
 ---
 
 ## Problem
+
 Relying on a single AI model creates a trade-off between capability and cost. High-performance models are expensive for routine tasks, while cost-effective models may lack the reasoning power for complex problems.
 
 ## Solution
+
 Implement a two-tier system with specialized roles:
 
 - **The Worker (Claude Sonnet 4):** Fast, capable, and cost-effective agent handling bulk tool use and code generation
@@ -31,12 +37,26 @@ graph TD
     E --> H
 ```
 
+## Evidence
+
+- **Evidence Grade:** `emerging`
+- **Most Valuable Findings:** Validated in production at Sourcegraph (~90% cost reduction vs. all-frontier); academic foundation from model cascading research (FrugalGPT: up to 98% cost reduction with quality parity)
+- **Unverified:** Optimal Oracle invocation thresholds remain application-specific
+
 ## How to use it
-Development environments, complex coding tasks, architectural decisions, debugging sessions where initial approaches fail.
+
+Development environments, complex coding tasks, architectural decisions, debugging sessions where initial approaches fail. Also known in literature as model cascading, weak-strong model routing, or hierarchical model systems.
 
 ## Trade-offs
+
 * **Pros:** Cost-efficient use of frontier models; sophisticated problem-solving; specialized AI team approach
 * **Cons:** Additional orchestration complexity; potential latency from model switching; requires careful Oracle invocation logic
 
 ## References
+
 * Sourcegraph Team presentation on multi-model AI systems
+* FrugalGPT (Stanford, 2023): https://arxiv.org/abs/2305.05176
+* RouteLLM (ICLR 2024): https://arxiv.org/abs/2406.18665
+* LiteLLM Router: https://github.com/BerriAI/litellm
+
+- Primary source: https://youtu.be/hAEmt-FMyHA?si=6iKcGnTavdQlQKUZ

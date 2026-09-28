@@ -1,0 +1,99 @@
+---
+// ABOUTME: Page shell for every route: head metadata, theme boot script, header, and footer.
+// ABOUTME: Pages can set a canonical path and a Markdown alternate URL for agents.
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  type?: 'website' | 'article';
+  canonicalPath?: string;
+  markdownPath?: string;
+  footerNewsletter?: boolean;
+}
+
+const {
+  title = 'Awesome Agentic Patterns',
+  description = 'A curated catalogue of AI agent design patterns.',
+  image = '/og-image.svg',
+  type = 'website',
+  canonicalPath,
+  markdownPath,
+  footerNewsletter = true,
+} = Astro.props;
+
+const canonicalURL = new URL(canonicalPath || Astro.url.pathname, Astro.site);
+
+// Theme initialization script - runs before page render to prevent flash
+const themeScript = `
+  (function() {
+    try {
+      const stored = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = stored || (prefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    } catch {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', prefersDark ? 'dark' : 'light');
+    }
+  })();
+`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="canonical" href={canonicalURL} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt" />
+    {markdownPath && <link rel="alternate" type="text/markdown" href={markdownPath} />}
+
+    <!-- Primary Meta Tags -->
+    <title>{title}</title>
+    <meta name="title" content={title} />
+    <meta name="description" content={description} />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content={type} />
+    <meta property="og:url" content={canonicalURL} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL(image, Astro.site)} />
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content={canonicalURL} />
+    <meta property="twitter:title" content={title} />
+    <meta property="twitter:description" content={description} />
+    <meta property="twitter:image" content={new URL(image, Astro.site)} />
+
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#f7f7f5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0e0f11" media="(prefers-color-scheme: dark)" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
+    />
+
+    <!-- Theme Initialization -->
+    <script set:html={themeScript} />
+  </head>
+  <body>
+    <!-- Skip Navigation for Keyboard Users -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+
+    <Header currentPath={Astro.url.pathname} />
+    <main id="main-content" tabindex="-1">
+      <slot />
+    </main>
+    <Footer newsletter={footerNewsletter} />
+  </body>
+</html>

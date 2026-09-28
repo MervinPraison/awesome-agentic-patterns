@@ -1,0 +1,380 @@
+/* ABOUTME: Global design tokens, reset, and shared utility classes for the site. */
+/* ABOUTME: Light tokens live on :root; dark tokens apply by data-theme or by system preference. */
+
+/* Design tokens */
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-bg: #f7f7f5;
+  --color-bg-soft: #efefec;
+  --color-bg-elevated: #ffffff;
+  --color-bg-panel: #e8e8e4;
+  --color-fg: #17181b;
+  --color-text: #17181b;
+  --color-text-muted: #5c6069;
+  --color-border: #e0e0dc;
+  --color-divider: #c9c9c3;
+
+  --color-primary: #c2412d;
+  --color-primary-hover: #a33422;
+  --color-primary-light: #fbe7e2;
+  --color-on-primary: #ffffff;
+
+  --surface-card: #ffffff;
+  --surface-card-soft: #fbfbfa;
+  --surface-pill: #efefec;
+  --surface-border-strong: #c9c9c3;
+  --surface-header: rgba(247, 247, 245, 0.88);
+  --text-muted-strong: #44474e;
+
+  --color-success: #2f7a4f;
+  --color-success-bg: #e3f2e8;
+  --color-warning: #8a5d00;
+  --color-warning-bg: #f7ecd2;
+  --color-error: #b42318;
+  --color-info: #2f5fa7;
+  --color-info-bg: #e4ecf8;
+
+  --color-accent-blue: #2f5fa7;
+  --color-accent-moss: #2f7a4f;
+  --color-accent-amber: #8a5d00;
+
+  --code-bg: #f0f0ed;
+  --code-block-bg: #16181b;
+  --code-block-fg: #e6e7e9;
+
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
+  --spacing-3xl: 4.5rem;
+
+  --font-display: 'Geist', 'Segoe UI', system-ui, sans-serif;
+  --font-sans: 'Geist', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --radius-sm: 0.3rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+
+  --shadow-sm: 0 1px 2px rgba(23, 24, 27, 0.06);
+  --shadow-md: 0 4px 16px rgba(23, 24, 27, 0.08);
+  --shadow-lg: 0 16px 48px rgba(23, 24, 27, 0.16);
+
+  --page-max: 1320px;
+  --header-height: 3.5rem;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-bg: #0e0f11;
+  --color-bg-soft: #15171a;
+  --color-bg-elevated: #181a1e;
+  --color-bg-panel: #202328;
+  --color-fg: #e8e9eb;
+  --color-text: #e8e9eb;
+  --color-text-muted: #9aa0a8;
+  --color-border: #262a30;
+  --color-divider: #363b42;
+
+  --color-primary: #f0826a;
+  --color-primary-hover: #f59a86;
+  --color-primary-light: rgba(240, 130, 106, 0.14);
+  --color-on-primary: #1a0f0c;
+
+  --surface-card: #15171a;
+  --surface-card-soft: #121417;
+  --surface-pill: #202328;
+  --surface-border-strong: #363b42;
+  --surface-header: rgba(14, 15, 17, 0.88);
+  --text-muted-strong: #c3c7cd;
+
+  --color-success: #5fbf8a;
+  --color-success-bg: rgba(95, 191, 138, 0.14);
+  --color-warning: #e0b04d;
+  --color-warning-bg: rgba(224, 176, 77, 0.14);
+  --color-error: #f28b7a;
+  --color-info: #7fa7e6;
+  --color-info-bg: rgba(127, 167, 230, 0.14);
+
+  --color-accent-blue: #7fa7e6;
+  --color-accent-moss: #5fbf8a;
+  --color-accent-amber: #e0b04d;
+
+  --code-bg: #202328;
+  --code-block-bg: #0a0b0c;
+  --code-block-fg: #dfe2e6;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --color-bg: #0e0f11;
+    --color-bg-soft: #15171a;
+    --color-bg-elevated: #181a1e;
+    --color-bg-panel: #202328;
+    --color-fg: #e8e9eb;
+    --color-text: #e8e9eb;
+    --color-text-muted: #9aa0a8;
+    --color-border: #262a30;
+    --color-divider: #363b42;
+
+    --color-primary: #f0826a;
+    --color-primary-hover: #f59a86;
+    --color-primary-light: rgba(240, 130, 106, 0.14);
+    --color-on-primary: #1a0f0c;
+
+    --surface-card: #15171a;
+    --surface-card-soft: #121417;
+    --surface-pill: #202328;
+    --surface-border-strong: #363b42;
+    --surface-header: rgba(14, 15, 17, 0.88);
+    --text-muted-strong: #c3c7cd;
+
+    --color-success: #5fbf8a;
+    --color-success-bg: rgba(95, 191, 138, 0.14);
+    --color-warning: #e0b04d;
+    --color-warning-bg: rgba(224, 176, 77, 0.14);
+    --color-error: #f28b7a;
+    --color-info: #7fa7e6;
+    --color-info-bg: rgba(127, 167, 230, 0.14);
+
+    --color-accent-blue: #7fa7e6;
+    --color-accent-moss: #5fbf8a;
+    --color-accent-amber: #e0b04d;
+
+    --code-bg: #202328;
+    --code-block-bg: #0a0b0c;
+    --code-block-fg: #dfe2e6;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.55);
+  }
+}
+
+/* Elements with the hidden attribute stay hidden even when a class sets display. */
+[hidden] {
+  display: none !important;
+}
+
+/* Reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 15px;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+}
+
+main {
+  flex: 1;
+  position: relative;
+}
+
+::selection {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  z-index: 9999;
+  transition: top 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.skip-link:focus {
+  top: var(--spacing-md);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-display);
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+p {
+  margin-bottom: 1em;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+code,
+pre,
+kbd {
+  font-family: var(--font-mono);
+}
+
+input,
+textarea,
+select {
+  color: var(--color-text);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.button--primary {
+  background: var(--color-text);
+  color: var(--color-bg);
+}
+
+.button--primary:hover {
+  background: var(--text-muted-strong);
+}
+
+.button--secondary {
+  background: var(--color-bg-elevated);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.button--secondary:hover {
+  border-color: var(--color-divider);
+}
+
+.section-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.surface-panel {
+  background: var(--surface-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  background: var(--surface-pill);
+  color: var(--color-text-muted);
+}
+
+.status-pill--best-practice,
+.status-pill--validated-in-production,
+.status-pill--established {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.status-pill--emerging,
+.status-pill--rapidly-improving {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.status-pill--experimental-but-awesome {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.mermaid {
+  display: flex;
+  justify-content: center;
+  margin: var(--spacing-lg) 0;
+  background-color: var(--color-bg-elevated);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}

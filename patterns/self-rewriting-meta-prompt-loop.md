@@ -6,12 +6,18 @@ based_on: ["Noah D. Goodman (Meta-Prompt)"]
 category: Orchestration & Control
 source: "https://noahgoodman.substack.com/p/meta-prompt-a-simple-self-improving"
 tags: [meta-prompting, self-improvement, system-prompt, reflection]
+summary: "Has the agent reflect after each episode, draft edits to its own system prompt, validate them through guardrails, and save the new version"
+signals: ["Low-risk, high-volume, well-defined workflows such as formatting or style", "Static system prompts go stale as new edge cases appear", "Version control and rollback for prompts are in place"]
+anti_signals: ["Safety-critical or regulated domain without human approval gates", "No guardrails to stop drift, prompt bloat, or jailbreaks"]
+updated_at: "2026-03-11"
 ---
 
 ## Problem
+
 Static system prompts become stale or overly brittle as an agent encounters new tasks and edge-cases. Manually editing them is slow and error-prone.
 
 ## Solution
+
 Let the agent **rewrite its own system prompt** after each interaction:
 
 1. **Reflect** on the latest dialogue or episode.  
@@ -29,11 +35,29 @@ if passes_guardrails(delta):
     save(system_prompt)
 ```
 
+## Evidence
+
+- **Evidence Grade:** `high` (academic), `low` (direct production implementation)
+- **Key Findings:** Strong academic foundation from Reflexion, APE, Self-Refine, DSPy, and Constitutional AI. Direct autonomous implementations are rare in production due to safety concerns (drift, jailbreak risk). Industry prefers hybrid approaches with guardrails and human oversight.
+- **Best Practice:** Pair with canary rollouts, multi-layer guardrails, and version control integration.
+
+## How to use it
+
+- Best for low-risk domains with high-volume, well-defined workflows (e.g., formatting, style)
+- Requires strong guardrails: structural validation, intent preservation checks, change magnitude limits
+- Include version control integration and rollback capability
+- Consider dual-agent architecture (executor + critic) for safer delta generation
+- Avoid in safety-critical or high-regulation domains without human approval gates
+
 ## Trade-offs
 
-**Pros:** rapid adaptation; no human in the loop for minor tweaks.
-**Cons:** risk of drift or jailbreak—needs a strong guardrail step.
+**Pros:** Rapid adaptation; data-driven improvements; no training infrastructure required.
+
+**Cons:** Risk of drift or jailbreak; prompt bloat; oscillation and instability.
 
 ## References
 
 * Goodman, *Meta-Prompt: A Simple Self-Improving Language Agent*. ([noahgoodman.substack.com](https://noahgoodman.substack.com/p/meta-prompt-a-simple-self-improving))
+* Shinn et al., *Reflexion: Language Agents with Verbal Reinforcement Learning*. arXiv:2303.11366 (2023)
+* Madaan et al., *Self-Refine: Large Language Models Can Self-Correct*. arXiv:2303.05125 (2023)
+* Khattab et al., *DSPy: Declarative Self-Improving Language Programs*. ([github.com/stanfordnlp/dspy](https://github.com/stanfordnlp/dspy))

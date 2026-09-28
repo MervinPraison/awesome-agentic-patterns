@@ -1,11 +1,15 @@
 ---
 title: Initializer-Maintainer Dual Agent Architecture
-status: emerging
+status: validated-in-production
 authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Anthropic Engineering Team"]
+based_on: ["Anthropic Engineering Team", "Cursor Engineering (Planner-Worker Architecture)"]
 category: Orchestration & Control
 source: "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents"
 tags: [long-running-agents, session-handoff, lifecycle-specialization, project-bootstrap, incremental-development]
+summary: "Uses a one-time initializer agent to create the feature list, progress files, and bootstrap script, then a coding agent that resumes from them one feature per session"
+signals: ["Projects need many agent sessions over days or weeks", "Applications have many discrete features to track", "Context loss between sessions is costly"]
+anti_signals: ["Small, single-session tasks", "Exploratory or research projects with no clear feature list up front"]
+updated_at: "2026-03-11"
 ---
 
 ## Problem
@@ -121,5 +125,6 @@ sequenceDiagram
 ## References
 
 * [Anthropic Engineering: Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
+* [Cursor: Scaling long-running autonomous coding](https://cursor.com/blog/scaling-agents)
 * Related: [Filesystem-Based Agent State](filesystem-based-agent-state.md)
 * Related: [Proactive Agent State Externalization](proactive-agent-state-externalization.md)

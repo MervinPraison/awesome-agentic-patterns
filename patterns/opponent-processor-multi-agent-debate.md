@@ -1,11 +1,27 @@
 ---
 title: Opponent Processor / Multi-Agent Debate Pattern
 status: emerging
-authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Dan Shipper (Every)", "Reddit Community"]
-category: "Orchestration & Control"
-source: "https://every.to/podcast/transcript-how-to-use-claude-code-like-the-people-who-built-it"
-tags: [multi-agent, debate, adversarial, bias-reduction, uncorrelated-context, validation]
+authors:
+  - Nikola Balic (@nibzard)
+based_on:
+  - Dan Shipper (Every)
+  - Reddit Community
+category: Orchestration & Control
+source: >-
+  https://every.to/podcast/transcript-how-to-use-claude-code-like-the-people-who-built-it
+tags:
+  - multi-agent
+  - debate
+  - adversarial
+  - bias-reduction
+  - uncorrelated-context
+  - validation
+slug: opponent-processor-multi-agent-debate
+id: opponent-processor-multi-agent-debate-pattern
+summary: "Spawns agents with opposing roles on the same context, lets them critique each other, then synthesizes their positions to expose bias and blind spots"
+signals: ["High-stakes decision where confirmation bias is a risk", "Competing interests or perspectives must be weighed", "A synthesizer agent or human can resolve the debate"]
+anti_signals: ["Simple decisions that need no debate", "Budget cannot cover 2x or more token cost"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem
@@ -51,6 +67,13 @@ graph TD
 4. Collect their outputs
 5. Either synthesize automatically or review differences manually
 
+**Resolution mechanisms:**
+
+- **Automatic synthesis**: Third agent evaluates and integrates opposing views
+- **Weighted aggregation**: Combine outputs with confidence-based weights
+- **Human-in-the-loop**: Present trade-offs for manual decision
+- **Set limits**: Use max_rounds and deadlock detection to prevent infinite debate
+
 **Concrete example from transcript (expense filing):**
 
 > "I have two subagents, one that represents me and one that represents the company. And they do battle to figure out what's the proper actual set of expenses. It's like an auditor subagent and a pro-Dan subagent."
@@ -89,3 +112,10 @@ Early Reddit thread showed subagents as: Frontend dev, Backend dev, Designer, Te
 * Dan Shipper: "One of my non-technical Claude Code use cases is expense filing... I have two subagents, one that represents me and one that represents the company. And they do battle to figure out what's the proper actual set of expenses."
 * Boris Cherny: "There's a Reddit thread where someone made subagents for front end dev, back end dev, designer, testing dev, PM... I think the value is actually the uncorrelated context windows where you have these two context windows that don't know about each other. You tend to get better results this way."
 * [AI & I Podcast: How to Use Claude Code Like the People Who Built It](https://every.to/podcast/transcript-how-to-use-claude-code-like-the-people-who-built-it)
+
+**Academic foundations:**
+* Dung, P. M. (1995). "On the Acceptability of Arguments and its Fundamental Role in Nonmonotonic Reasoning." *Artificial Intelligence*, 77(2), 321-357. — Established abstract argumentation frameworks (Dung's Framework)
+
+**Industry implementations:**
+* Microsoft AutoGen — Multi-agent conversations with critic/reviewer agents
+* Anthropic Constitutional AI — Self-critique against constitutional principles (RLAIF)

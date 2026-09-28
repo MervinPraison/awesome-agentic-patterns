@@ -1,11 +1,27 @@
 ---
 title: Progressive Autonomy with Model Evolution
 status: best-practice
-authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Boris Cherny (Anthropic)", "Claude Code Team"]
-category: "Orchestration & Control"
-source: "https://every.to/podcast/transcript-how-to-use-claude-code-like-the-people-who-built-it"
-tags: [model-evolution, scaffolding, autonomy, system-prompts, capabilities, model-intelligence]
+authors:
+  - Nikola Balic (@nibzard)
+based_on:
+  - Boris Cherny (Anthropic)
+  - Claude Code Team
+category: Orchestration & Control
+source: >-
+  https://every.to/podcast/transcript-how-to-use-claude-code-like-the-people-who-built-it
+tags:
+  - model-evolution
+  - scaffolding
+  - autonomy
+  - system-prompts
+  - capabilities
+  - model-intelligence
+slug: progressive-autonomy-with-model-evolution
+id: progressive-autonomy-with-model-evolution
+summary: "Audits prompts and orchestration after each model upgrade and removes the scaffolding that evals show the new model no longer needs"
+signals: ["A newer, more capable model is in production", "System prompts hold instructions written for older model weaknesses", "Token cost or latency of scaffolding is noticeable"]
+anti_signals: ["No evals to detect quality loss after removal", "Instructions carry domain knowledge or safety constraints", "The new model is not yet proven stable in production"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem
@@ -25,6 +41,13 @@ Models improve faster than scaffolding is removed, creating technical debt.
 **Actively remove scaffolding** as models become more capable. Regularly audit system prompts, orchestration logic, and agent architecture to eliminate what newer models have internalized.
 
 **Core principle**: Push complexity into the model itself rather than external scaffolding.
+
+Operationalize this as a repeating simplification loop:
+- Identify instructions that existed to compensate for older model weaknesses.
+- Remove a slice of scaffolding and run controlled evals against production-like tasks.
+- Keep deletions that preserve quality; revert deletions that increase failure risk.
+
+The goal is not minimal prompts at all costs, but right-sized scaffolding for the current model generation.
 
 ```mermaid
 graph LR
@@ -75,6 +98,18 @@ Write clean, tested code.
 - Format specifications models infer from context
 - Planning steps models do internally with extended thinking
 
+**Scaffolding removal priority:**
+
+| Category | Safe to Remove | Always Keep |
+|----------|----------------|-------------|
+| Obvious instructions | ✓ | |
+| Step-by-step procedures | ✓ | |
+| Format specifications | ✓ | |
+| Domain knowledge | | ✓ |
+| Safety constraints | | ✓ |
+
+**Tools for prompt management:** Langfuse, LangSmith, Promptfoo (versioning, A/B testing, evaluation)
+
 **Real example from Claude Code:**
 
 > "I just deleted like 2,000 tokens or something from the system prompt yesterday. Just because Sonnet 4.5 doesn't need it anymore. But Opus 4.1 did need it." —Boris Cherny
@@ -114,3 +149,6 @@ Write clean, tested code.
 * Boris Cherny: "There's this frontier where you need to give the model a hard enough task to really push the limit... I think this is a general trend of stuff that used to be scaffolding with a more advanced model, it gets pushed into the model itself. The model kind of tends to subsume everything over time."
 * Cat Wu: "We build most things that we think would improve Claude Code's capabilities, even if that means we'll have to get rid of it in three months. If anything, we hope that we will get rid of it in three months."
 * [AI & I Podcast: How to Use Claude Code Like the People Who Built It](https://every.to/podcast/transcript-how-to-use-claude-code-like-the-people-who-built-it)
+* Rich Sutton, [The Bitter Lesson](http://www.incompleteideas.net/IncIdeas/BitterLesson.html) (2019)
+* Zhou et al., [Large Language Models Are Human-Level Prompt Engineers (APE)](https://arxiv.org/abs/2211.01910) (ICLR 2023)
+* Scrase et al., [Scratch Copilot: Supporting Youth Creative Coding](https://arxiv.org/abs/2505.03867v1) (IDC 2025)

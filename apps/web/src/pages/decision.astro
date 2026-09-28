@@ -1,0 +1,599 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import questions from '../data/decision-questions.json';
+
+const initialQuestion = questions[0];
+const initialProgress = (1 / questions.length) * 100;
+---
+
+<BaseLayout title="Pattern Decision Tree - Awesome Agentic Patterns">
+  <div class="decision-page">
+    <section class="decision-hero">
+      <div class="decision-hero-copy">
+        <span class="section-label">Decision Guide</span>
+        <h1>Decision guide</h1>
+        <p class="decision-subtitle">
+          Answer a few questions about control, memory, tools, and safety. You get a short list of
+          patterns and the reason for each.
+        </p>
+      </div>
+    </section>
+
+    <section class="decision-stage surface-panel">
+      <div id="decision-root">
+        <div class="decision-question">
+          <div class="decision-stage-heading">
+            <div>
+              <p class="decision-stage-kicker">Route builder</p>
+              <p class="decision-stage-copy">
+                Each answer narrows the shortlist and preserves the reasoning behind the
+                recommendation.
+              </p>
+            </div>
+            <div class="decision-progress">
+              <div class="question-progress">Question 1 of {questions.length}</div>
+              <div class="progress-track" aria-hidden="true">
+                <span style={`width: ${initialProgress}%`}></span>
+              </div>
+            </div>
+          </div>
+          <h2 class="question-title">{initialQuestion.question}</h2>
+          <div class="question-options">
+            {
+              initialQuestion.options.map((option) => {
+                const answersParam = encodeURIComponent(
+                  JSON.stringify([{ questionId: initialQuestion.id, value: option.value }])
+                );
+
+                return (
+                  <a href={`/decision?answers=${answersParam}`} class="option-card">
+                    <div class="option-header">
+                      <input type="radio" readonly />
+                      <span class="option-label">{option.label}</span>
+                    </div>
+                    <p class="option-description">{option.description}</p>
+                  </a>
+                );
+              })
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<script type="application/json" id="decision-questions" set:html={JSON.stringify(questions)} />
+
+<script>
+  const questionsEl = document.getElementById('decision-questions');
+  const questions = questionsEl ? JSON.parse(questionsEl.textContent || '[]') : [];
+  const root = document.getElementById('decision-root');
+
+  const parseAnswers = () => {
+    const params = new URLSearchParams(window.location.search);
+    const raw = params.get('answers');
+    if (!raw) return [];
+    try {
+      const parsed = JSON.parse(decodeURIComponent(raw));
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (err) {
+      return [];
+    }
+  };
+
+  const getRecommendations = (answerList) => {
+    const answersMap = Object.fromEntries(answerList.map((a) => [a.questionId, a.value]));
+    const agentType = answersMap['agent-type'] ?? answersMap.agentType;
+
+    const patterns = [];
+    const rationales = [];
+    const avoid = [];
+
+    if (agentType === 'autonomous') {
+      patterns.push(
+        'Continuous Autonomous Task Loop',
+        'Specification-Driven Agent Development',
+        'Progressive Autonomy with Model Evolution'
+      );
+      rationales.push(
+        'For autonomous agents, consider patterns that enable self-directed operation and gradual capability increase.'
+      );
+      avoid.push(
+        'Unbounded tool access without guardrails.',
+        'Long-running loops without checkpoints.'
+      );
+    } else if (agentType === 'assisted') {
+      patterns.push(
+        'Human-in-Loop Approval Framework',
+        'Spectrum of Control: Blended Initiative',
+        'Seamless Background-to-Foreground Handoff'
+      );
+      rationales.push(
+        'Human-assisted agents benefit from clear control handoff and approval mechanisms.'
+      );
+      avoid.push('Opaque autonomy without explicit handoff points.');
+    } else if (agentType === 'workflow') {
+      patterns.push(
+        'Code-Then-Execute Pattern',
+        'Asynchronous Coding Agent Pipeline',
+        'Plan-Then-Execute Pattern'
+      );
+      rationales.push(
+        'Workflow automation benefits from clear separation of planning and execution phases.'
+      );
+      avoid.push('Single-step automation without validation gates.');
+    }
+
+    if (answersMap.complexity === 'complex') {
+      patterns.push(
+        'Tree-of-Thought Reasoning',
+        'Graph-of-Thoughts',
+        'Language Agent Tree Search (LATS)'
+      );
+      rationales.push(
+        'Complex tasks require advanced reasoning patterns that explore multiple solution paths.'
+      );
+      avoid.push('Single-pass solutions that skip exploration and verification.');
+    } else if (answersMap.complexity === 'moderate') {
+      patterns.push('Chain-of-Thought Monitoring', 'Reflection');
+      rationales.push(
+        'Moderately complex tasks benefit from structured reasoning and self-reflection.'
+      );
+    } else if (answersMap.complexity === 'simple') {
+      avoid.push('Over-engineered planners that add latency to simple tasks.');
+    }
+
+    if (answersMap.memory === 'persistent') {
+      patterns.push(
+        'Episodic Memory Retrieval Injection',
+        'Filesystem-Based Agent State',
+        'Memory Synthesis from Execution Logs'
+      );
+      rationales.push(
+        'Long-term memory requires patterns for storing, retrieving, and synthesizing past experiences.'
+      );
+      avoid.push('Persisting sensitive data without retention policies.');
+    } else if (answersMap.memory === 'session') {
+      patterns.push('Context Window Optimization', 'Progressive Disclosure for Large Files');
+      rationales.push('Session memory benefits from efficient context management techniques.');
+      avoid.push('Over-reliance on long context windows without summarization.');
+    } else if (answersMap.memory === 'none') {
+      avoid.push('Adding storage layers that are never used.');
+    }
+
+    if (answersMap.tools === 'many') {
+      patterns.push(
+        'Progressive Tool Discovery',
+        'Tool Capability Compartmentalization',
+        'Parallel Tool Execution'
+      );
+      rationales.push(
+        'When using many tools, consider patterns for discovery, organization, and parallel execution.'
+      );
+      avoid.push('Tool sprawl without permissions and usage boundaries.');
+    } else if (answersMap.tools === 'few') {
+      patterns.push('Code-First Tool Interface Pattern', 'Tool Use Steering via Prompting');
+      rationales.push(
+        'For a small set of tools, focus on clear interfaces and effective prompting.'
+      );
+      avoid.push('Overbuilding dynamic tool discovery for a fixed tool set.');
+    } else if (answersMap.tools === 'none') {
+      avoid.push('Designing prompts around tools you do not have.');
+    }
+
+    if (answersMap.safety === 'high') {
+      patterns.push(
+        'Anti-Reward Hacking Grader Design',
+        'Egress Lockdown: No Exfiltration Channel',
+        'Lethal Trifecta Threat Model',
+        'Deterministic Security Scanning Build Loop'
+      );
+      rationales.push(
+        'High-risk applications require security-focused patterns to prevent exploitation and ensure safety.'
+      );
+      avoid.push('Shipping without evals, monitoring, and rollback plans.');
+      avoid.push('Granting high-risk permissions by default.');
+    } else if (answersMap.safety === 'medium') {
+      patterns.push('Workflow Evals with Mocked Tools', 'LLM Observability');
+      rationales.push(
+        'Medium-risk applications benefit from evaluation and observability patterns.'
+      );
+      avoid.push('Skipping evaluation and observability instrumentation.');
+    }
+
+    return {
+      patterns: [...new Set(patterns)],
+      rationale: rationales.join(' '),
+      avoid: [...new Set(avoid)],
+    };
+  };
+
+  const renderProgress = (index, total) => {
+    const progress = ((index + 1) / total) * 100;
+
+    return `
+      <div class="decision-progress">
+        <div class="question-progress">Question ${index + 1} of ${total}</div>
+        <div class="progress-track" aria-hidden="true">
+          <span style="width: ${progress}%"></span>
+        </div>
+      </div>
+    `;
+  };
+
+  const renderQuestion = (question, answers, index) => {
+    const total = questions.length;
+    const optionsHtml = question.options
+      .map((option) => {
+        const newAnswers = [...answers, { questionId: question.id, value: option.value }];
+        const answersParam = encodeURIComponent(JSON.stringify(newAnswers));
+        return `
+          <a href="/decision?answers=${answersParam}" class="option-card">
+            <div class="option-header">
+              <input type="radio" readonly />
+              <span class="option-label">${option.label}</span>
+            </div>
+            <p class="option-description">${option.description}</p>
+          </a>
+        `;
+      })
+      .join('');
+
+    const previousLink =
+      answers.length > 0
+        ? `
+          <a href="/decision?answers=${encodeURIComponent(
+            JSON.stringify(answers.slice(0, -1))
+          )}" class="button button--secondary">
+            ← Previous
+          </a>
+        `
+        : '';
+
+    return `
+      <div class="decision-question">
+        <div class="decision-stage-heading">
+          <div>
+            <p class="decision-stage-kicker">Route builder</p>
+            <p class="decision-stage-copy">
+              Each answer narrows the shortlist and preserves the reasoning behind the recommendation.
+            </p>
+          </div>
+          ${renderProgress(index, total)}
+        </div>
+        <h2 class="question-title">${question.question}</h2>
+        <div class="question-options">${optionsHtml}</div>
+        <div class="decision-nav">${previousLink}<span></span></div>
+      </div>
+    `;
+  };
+
+  const renderResults = (recommendation) => {
+    const patternsHtml = recommendation.patterns
+      .map(
+        (pattern) => `
+          <div class="result-pattern">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" class="result-icon">
+              <path d="M10 0L12.5 7.5L20 10L12.5 12.5L10 20L7.5 12.5L0 10L7.5 7.5L10 0Z" fill="currentColor" />
+            </svg>
+            <span>${pattern}</span>
+          </div>
+        `
+      )
+      .join('');
+
+    const avoidItems = recommendation.avoid.map((item) => `<li>${item}</li>`).join('');
+    const avoidHtml =
+      avoidItems.length > 0
+        ? `<ul>${avoidItems}</ul>`
+        : '<p>Focus on clear boundaries, reliable validation, and safe tool access.</p>';
+
+    return `
+      <div class="decision-results">
+        <h2 class="results-title">Recommended Patterns</h2>
+        <div class="results-rationale">
+          <h3>Why These Patterns?</h3>
+          <p>${recommendation.rationale}</p>
+        </div>
+        <div class="results-avoid">
+          <h3>What to Avoid</h3>
+          ${avoidHtml}
+        </div>
+        <div class="results-patterns">${patternsHtml}</div>
+        <div class="decision-actions">
+          <a href="/decision" class="button button--primary">Start Over</a>
+          <a href="/patterns" class="button button--secondary">Browse All Patterns</a>
+        </div>
+      </div>
+    `;
+  };
+
+  const renderDecision = () => {
+    if (!root || questions.length === 0) return;
+    const answers = parseAnswers();
+    const step = Math.min(answers.length, questions.length);
+
+    if (step < questions.length) {
+      root.innerHTML = renderQuestion(questions[step], answers, step);
+      return;
+    }
+
+    const recommendation = getRecommendations(answers);
+    root.innerHTML = renderResults(recommendation);
+  };
+
+  renderDecision();
+</script>
+
+<style is:global>
+  .decision-page {
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: var(--spacing-xl) var(--spacing-lg) var(--spacing-3xl);
+  }
+
+  .decision-hero {
+    padding: 1.75rem 0 1.25rem;
+  }
+
+  .decision-hero-copy h1 {
+    margin-top: 0.4rem;
+    font-size: 1.75rem;
+  }
+
+  .decision-subtitle {
+    margin-top: var(--spacing-lg);
+    max-width: 44rem;
+    color: var(--color-text-muted);
+    font-size: 1.08rem;
+    line-height: 1.75;
+  }
+
+  .decision-stage {
+    padding: clamp(1.2rem, 2.5vw, 2rem);
+  }
+
+  .decision-stage-heading {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .decision-stage-kicker {
+    margin: 0;
+    color: var(--color-primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .decision-stage-copy {
+    margin: 0.5rem 0 0;
+    max-width: 34rem;
+    color: var(--color-text-muted);
+    line-height: 1.7;
+  }
+
+  .decision-progress {
+    display: grid;
+    gap: 0.75rem;
+    min-width: min(17rem, 100%);
+  }
+
+  .question-progress {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.38rem 0.72rem;
+    border-radius: 999px;
+    background: var(--color-primary-light);
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .progress-track {
+    position: relative;
+    height: 0.45rem;
+    border-radius: 999px;
+    background: var(--color-bg-panel);
+    overflow: hidden;
+  }
+
+  .progress-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  }
+
+  .question-title {
+    font-size: clamp(1.9rem, 4vw, 2.8rem);
+    color: var(--color-text);
+    margin-bottom: var(--spacing-xl);
+    max-width: 16ch;
+  }
+
+  .question-options {
+    display: grid;
+    gap: var(--spacing-md);
+  }
+
+  .option-card {
+    display: block;
+    padding: clamp(1rem, 2vw, 1.25rem);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    color: var(--color-text);
+    background: var(--surface-card);
+    box-shadow: var(--shadow-sm);
+    transition:
+      border-color 0.2s ease,
+      transform 0.2s ease,
+      box-shadow 0.2s ease;
+    cursor: pointer;
+  }
+
+  .option-card:hover {
+    border-color: var(--color-primary);
+    background-color: var(--color-bg-elevated);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .option-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .option-header input[type='radio'] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--color-primary);
+  }
+
+  .option-label {
+    font-size: 1.12rem;
+    font-weight: 600;
+  }
+
+  .option-description {
+    font-size: 0.95rem;
+    color: var(--text-muted-strong);
+    margin: 0;
+    margin-left: 36px;
+    line-height: 1.65;
+  }
+
+  .decision-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: var(--spacing-xl);
+  }
+
+  .decision-results {
+    display: grid;
+    gap: var(--spacing-lg);
+  }
+
+  .results-title {
+    font-size: clamp(2rem, 4vw, 3rem);
+    color: var(--color-text);
+    margin-bottom: 0;
+  }
+
+  .results-rationale {
+    padding: var(--spacing-lg);
+    background-color: var(--color-bg-soft);
+    border-radius: var(--radius-lg);
+  }
+
+  .results-rationale h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .results-rationale p {
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    line-height: 1.7;
+  }
+
+  .results-avoid {
+    padding: var(--spacing-lg);
+    background-color: var(--color-primary-light);
+    border-radius: var(--radius-lg);
+    border-left: 3px solid var(--color-warning);
+  }
+
+  .results-avoid h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--spacing-sm);
+  }
+
+  .results-avoid ul {
+    margin: 0;
+    padding-left: var(--spacing-lg);
+  }
+
+  .results-avoid li {
+    color: var(--color-text-muted);
+    line-height: 1.6;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .results-patterns {
+    display: grid;
+    gap: var(--spacing-sm);
+  }
+
+  .result-pattern {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: 0.95rem 1rem;
+    background-color: var(--surface-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--surface-border-strong);
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .result-icon {
+    color: var(--color-primary);
+    flex-shrink: 0;
+  }
+
+  .decision-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 960px) {
+    .decision-hero {
+      grid-template-columns: 1fr;
+    }
+
+    .decision-stage-heading {
+      flex-direction: column;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .decision-page {
+      padding-left: var(--spacing-md);
+      padding-right: var(--spacing-md);
+    }
+
+    .decision-actions {
+      flex-direction: column;
+    }
+
+    .decision-progress {
+      min-width: 100%;
+    }
+
+    .button {
+      width: 100%;
+    }
+
+    .question-title {
+      max-width: none;
+    }
+  }
+</style>

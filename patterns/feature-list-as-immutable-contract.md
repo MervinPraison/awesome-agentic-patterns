@@ -1,11 +1,25 @@
 ---
 title: Feature List as Immutable Contract
 status: emerging
-authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Anthropic Engineering Team"]
+authors:
+  - Nikola Balic (@nibzard)
+based_on:
+  - Anthropic Engineering Team
 category: Orchestration & Control
-source: "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents"
-tags: [scope-control, acceptance-criteria, anti-scope-creep, long-running-agents, task-management]
+source: >-
+  https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
+tags:
+  - scope-control
+  - acceptance-criteria
+  - anti-scope-creep
+  - long-running-agents
+  - task-management
+slug: feature-list-as-immutable-contract
+id: feature-list-as-immutable-contract
+summary: "Defines every feature up front in a JSON list with acceptance steps; the agent may only flip a feature to passing after it verifies it"
+signals: ["Long-running agents build complete applications with known requirements", "Agents declare done early or delete tests to pass", "Work spans many sessions and progress must stay measurable"]
+anti_signals: ["Exploratory prototyping or research with unclear scope", "Small, single-session tasks", "Requirements change rapidly during implementation"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem
@@ -65,6 +79,11 @@ Enforce through prompt instructions:
 - Agent MAY NOT delete features from the list
 - Agent MAY NOT modify acceptance criteria/steps
 - Agent MAY NOT mark features as "not applicable"
+
+**Two implementation variations:**
+
+- **Static list**: Features hardcoded at compile time (maximum security, requires redeploy to change)
+- **Dynamic-but-immutable**: Features loaded at startup then frozen (config changes via restart, used by LangChain/CrewAI)
 
 **3. Verification Requirements**
 
@@ -137,6 +156,14 @@ CRITICAL RULES:
 - Rigid format doesn't accommodate changing requirements
 - Large feature lists can overwhelm agent context
 
+**Security implications:**
+
+| Guaranteed by Immutable Contract | Not Guaranteed (requires additional patterns) |
+|----------------------------------|----------------------------------------------|
+| No unauthorized tool access | Prompt injection in parameters |
+| Predictable attack surface | Authorization bypass |
+| Schema validation prevents injection | Output exfiltration |
+
 **When to use:**
 
 - Building complete applications with known requirements
@@ -154,5 +181,7 @@ CRITICAL RULES:
 ## References
 
 * [Anthropic Engineering: Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
-* Related: [Initializer-Maintainer Dual Agent Architecture](initializer-maintainer-dual-agent.md)
-* Related: [Spec-as-Test Feedback Loop](spec-as-test-feedback-loop.md)
+* [Action-Selector Pattern (Beurer-Kellner et al., 2025)](https://arxiv.org/abs/2506.08837)
+* Related: [Initializer-Maintainer Dual Agent Architecture](initializer-maintainer-dual-agent.md) — extends this pattern with two-agent lifecycle
+* Related: [Action-Selector Pattern](action-selector-pattern.md) — alternative approach using allowlists
+* Related: [Sandboxed Tool Authorization](sandboxed-tool-authorization.md) — complementary pattern for capability restriction

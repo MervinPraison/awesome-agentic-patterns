@@ -1,11 +1,25 @@
 ---
-title: "Parallel Tool Call Learning"
+title: Parallel Tool Call Learning
 status: emerging
-authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Sam Pretty (Cognition)", "Will Brown (OpenAI)"]
-category: "Orchestration & Control"
-source: "https://youtu.be/1s_7RMG4O4U"
-tags: [parallelization, latency-optimization, tool-use, reinforcement-learning, performance]
+authors:
+  - Nikola Balic (@nibzard)
+based_on:
+  - Sam Pretty (Cognition)
+  - Will Brown (OpenAI)
+category: Orchestration & Control
+source: 'https://youtu.be/1s_7RMG4O4U'
+tags:
+  - parallelization
+  - latency-optimization
+  - tool-use
+  - reinforcement-learning
+  - performance
+slug: parallel-tool-call-learning
+id: parallel-tool-call-learning
+summary: "Uses agent reinforcement fine-tuning to teach the model to issue independent tool calls in parallel, which cuts sequential rounds and latency"
+signals: ["Agent makes many sequential tool calls that do not depend on each other", "Tool execution is faster than inference", "Agent RFT training and concurrent tool infrastructure are available"]
+anti_signals: ["Each tool result decides the next call", "Tools are slow or rate-limited"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem
@@ -43,6 +57,14 @@ During RL exploration, the agent discovers that:
 2. When tool results arrive together, the next reasoning step has more context
 3. Parallel patterns receive similar rewards in less time (implicit efficiency reward)
 4. The model naturally converges toward parallel execution patterns
+
+**Tool Classification for Safe Parallelization:**
+
+Agents learn to distinguish between:
+- **Read-only tools**: Safe to parallelize (search, read_file, list)
+- **State-modifying tools**: Require serialization (write_file, delete, state-changing APIs)
+
+This classification prevents race conditions while maximizing parallelism for safe operations.
 
 **Natural Emergence through RL:**
 
@@ -261,6 +283,12 @@ Total: 3-4 rounds (50% reduction in back-and-forth)
 
 > "We noticed that the model starts learning how to do a lot of parallel tool calls. The first action that the model does, it will kick off like eight different things... and then following on it will independently explore all of those things by again running more parallel tool calls."
 
+**Additional Validation: Ambience Healthcare**
+
+- **Task**: Medical coding with ICD-10 code lookups
+- **Result**: 18% latency reduction after Agent RFT
+- **Pattern**: Parallel execution of independent code lookups reduced sequential rounds
+
 ## When Parallelization Helps Most
 
 **High Impact Scenarios:**
@@ -358,3 +386,8 @@ graph TD
 - [OpenAI Build Hour: Agent RFT - Cognition Case Study (November 2025)](https://youtu.be/1s_7RMG4O4U)
 - [Parallel Tool Execution Pattern](./parallel-tool-execution.md)
 - Related patterns: Agent Reinforcement Fine-Tuning, Tool Use Incentivization via Reward Shaping
+
+### Academic Foundations
+
+- Schick et al. [ToolFormer: Language Models Can Teach Themselves to Use Tools](https://arxiv.org/abs/2302.04761) (ACL, 2023)
+- Yao et al. [ReAct: Synergizing Reasoning and Acting in Language Models](https://arxiv.org/abs/2210.03629) (NeurIPS, 2022)

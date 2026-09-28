@@ -1,11 +1,25 @@
 ---
 title: Distributed Execution with Cloud Workers
 status: emerging
-authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Dexter Horthy (HumanLayer)"]
+authors:
+  - Nikola Balic (@nibzard)
+based_on:
+  - Dexter Horthy (HumanLayer)
 category: Orchestration & Control
-source: "https://claude.com/blog/building-companies-with-claude-code"
-tags: [distributed-systems, parallelization, cloud, worktrees, scalability, team-coordination]
+source: 'https://claude.com/blog/building-companies-with-claude-code'
+tags:
+  - distributed-systems
+  - parallelization
+  - cloud
+  - worktrees
+  - scalability
+  - team-coordination
+slug: distributed-execution-cloud-workers
+id: distributed-execution-with-cloud-workers
+summary: "Runs many agent sessions in parallel on cloud workers, each in its own git worktree, with dependency-aware scheduling, merge coordination, and approval gates"
+signals: ["Team-wide migrations, refactors, or framework upgrades touch many files", "Work can be split into parallel units with clear dependencies", "Cloud compute and orchestration infrastructure are available"]
+anti_signals: ["Small tasks that one agent session can finish", "Changes are tightly coupled and would cause constant merge conflicts", "Infrastructure complexity or parallel model cost is not acceptable"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem
@@ -21,8 +35,9 @@ Implement a distributed execution framework that runs multiple Claude Code sessi
 **Git worktrees for isolation:**
 
 - Each agent session runs in dedicated worktree
+- Shared Git object database (lightweight storage)
+- Independent indexes and working directories per agent
 - Parallel development without checkout conflicts
-- Independent file system views of the repository
 
 **Cloud worker deployment:**
 
@@ -35,6 +50,8 @@ Implement a distributed execution framework that runs multiple Claude Code sessi
 - Merge conflict detection and resolution
 - Inter-agent communication protocols
 - Shared state management for coordination
+- Dependency-aware task scheduling (DAG-based)
+- Work-stealing for load balancing
 
 **Human oversight integration:**
 
@@ -152,4 +169,6 @@ Extends [Sub-Agent Spawning](sub-agent-spawning.md) and [Swarm Migration Pattern
 
 - [Building Companies with Claude Code](https://claude.com/blog/building-companies-with-claude-code) - HumanLayer's CodeLayer enables "teams run multiple Claude agent sessions in parallel"
 - [HumanLayer Documentation](https://docs.humanlayer.dev/) - Framework for human-in-the-loop agent coordination
+- Stone, P., & Veloso, M. (2000). Multiagent systems: A survey from a machine learning perspective. *Autonomous Robots*, 8(3), 345-383. DOI: 10.1023/A:1008930228068
+- Weiss, G. (Ed.). (2013). *Multiagent systems: a modern approach to distributed artificial intelligence*. MIT Press.
 - Related patterns: [Sub-Agent Spawning](sub-agent-spawning.md), [Swarm Migration Pattern](swarm-migration-pattern.md), [Human-in-the-Loop Approval Framework](human-in-loop-approval-framework.md)

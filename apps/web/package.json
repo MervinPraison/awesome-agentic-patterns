@@ -1,0 +1,39 @@
+{
+  "name": "@awesome-agentic-patterns/web",
+  "type": "module",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && pagefind --site dist/client && mkdir -p .vercel/output/static && rm -rf .vercel/output/static/pagefind && cp -R dist/client/pagefind .vercel/output/static/pagefind",
+    "preview": "astro preview",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^5.0.0",
+    "@astrojs/vercel": "^10.0.0",
+    "astro": "^6.0.2",
+    "d3": "7",
+    "gray-matter": "^4.0.3",
+    "markdown-it": "^14.1.0",
+    "mermaid": "^11.12.2",
+    "pagefind": "^1.4.0",
+    "rehype-mermaid": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.4.2",
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^22.10.5",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "astro-eslint-parser": "^1.0.3",
+    "eslint": "^8.57.1",
+    "eslint-plugin-astro": "^1.2.3",
+    "prettier": "^3.4.2",
+    "prettier-plugin-astro": "^0.14.1",
+    "typescript": "^5.7.3"
+  }
+}

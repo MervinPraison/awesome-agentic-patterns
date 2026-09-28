@@ -1,0 +1,70 @@
+---
+title: 'How Freshness Labels Work'
+description: 'What NEW and UPDATED mean on the site, and how freshness is derived from pattern metadata.'
+order: 3
+---
+
+## Overview
+
+The site uses freshness labels to help readers spot entries that were added recently or updated materially. These labels are meant to answer a simple question:
+
+Which patterns should I look at first if I want recent signal?
+
+## What the Labels Mean
+
+### `NEW`
+
+Use this when a pattern has been added recently enough that it should stand out as a new entry in the catalog.
+
+### `UPDATED`
+
+Use this when an existing pattern has been revised recently enough that returning readers should know it changed.
+
+`NEW` should take precedence over `UPDATED`.
+
+## Where Freshness Comes From
+
+Freshness in the current site is driven by pattern metadata, especially `updated_at`, with a fallback to the file modification date when `updated_at` is missing.
+
+That means:
+
+- if you materially revise a pattern, update `updated_at`
+- if a pattern does not specify `updated_at`, generated data will fall back to the markdown file's modification time
+
+## For Contributors
+
+You do not need a separate tracking file for freshness labels.
+
+When you update a pattern:
+
+1. Edit the markdown file in `patterns/`
+2. Update `updated_at` if the content changed materially
+3. Run validation and rebuild generated data
+
+```bash
+bun run validate:patterns
+bun run build:data
+```
+
+## Recommended Contributor Rule
+
+Update `updated_at` when any of these change:
+
+- the pattern summary or core thesis
+- the implementation guidance
+- trade-offs, safety notes, or limitations
+- references or examples that materially change how the pattern should be read
+
+Do not update it for trivial formatting or typo-only edits.
+
+## Why This Is Better Than Manual Tracking
+
+- Freshness stays attached to the pattern itself
+- The site can derive recent updates automatically during data generation
+- Contributors only need to maintain one source of truth: the pattern file
+
+## Related Files
+
+- [SCHEMA.md](https://github.com/nibzard/awesome-agentic-patterns/blob/main/SCHEMA.md)
+- [CONTRIBUTING.md](https://github.com/nibzard/awesome-agentic-patterns/blob/main/CONTRIBUTING.md)
+- [scripts/build-data.ts](https://github.com/nibzard/awesome-agentic-patterns/blob/main/scripts/build-data.ts)

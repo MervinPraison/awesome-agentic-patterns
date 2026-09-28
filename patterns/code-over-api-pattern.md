@@ -1,11 +1,23 @@
 ---
 title: Code-Over-API Pattern
 status: established
-authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Anthropic Engineering Team"]
+authors:
+  - Nikola Balic (@nibzard)
+based_on:
+  - Anthropic Engineering Team
 category: Tool Use & Environment
-source: "https://www.anthropic.com/engineering/code-execution-with-mcp"
-tags: [token-optimization, code-execution, data-processing, mcp]
+source: 'https://www.anthropic.com/engineering/code-execution-with-mcp'
+tags:
+  - token-optimization
+  - code-execution
+  - data-processing
+  - mcp
+slug: code-over-api-pattern
+id: code-over-api-pattern
+summary: "Agent writes code that calls tools and filters data inside a sandbox, so only summaries and samples return to the context window"
+signals: ["Data-heavy workflows over spreadsheets, databases, or logs", "Intermediate results do not need model inspection", "Token cost or latency matters"]
+anti_signals: ["No secure sandboxed code execution environment is available", "The model is not able to write correct code for the task", "Small tool results that fit easily in context"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem
@@ -15,6 +27,8 @@ When agents make direct API or tool calls, all intermediate data must flow throu
 ## Solution
 
 Instead of making direct tool calls, agents write and execute code that interacts with tools. Data processing, filtering, and transformation happens in the execution environment, with only results flowing back to the model context.
+
+**Core insight**: LLMs are better at writing code to call APIs than at calling APIs directly—due to training data alignment with millions of open-source code repositories.
 
 **Direct API approach (high token cost):**
 
@@ -99,12 +113,24 @@ The agent sees the log output and return value, but the full dataset never enter
 
 **Operational requirements:**
 
-- Sandboxed execution environment (containers, VMs, WebAssembly)
+- Sandboxed execution environment (containers, VMs, V8 isolates, WebAssembly)
 - Resource limits (CPU, memory, execution time)
 - Monitoring and logging infrastructure
 - Error handling and recovery mechanisms
 
+**Execution environment options:**
+
+- **V8 isolates**: Millisecond startup, minimal memory, strong isolation (Cloudflare Code Mode)
+- **Containers**: 2-5 second startup, full language flexibility (Modal, Docker)
+- **VMs**: Complete isolation for destructive operations (Cognition/Devon)
+
 ## References
 
 * Anthropic Engineering: Code Execution with MCP (2024)
-* Related: Code-Then-Execute Pattern (focuses on security/formal verification)
+* Cloudflare: Code Mode - V8 isolate-based execution (2025)
+* Beurer-Kellner et al.: Code-Then-Execute security framework (2025)
+* Related: Code-Then-Execute Pattern (focuses on security/formal verification vs token optimization)
+
+- Primary: https://www.anthropic.com/engineering/code-execution-with-mcp
+- Cloudflare: https://blog.cloudflare.com/code-mode/
+- Academic: https://arxiv.org/abs/2506.08837

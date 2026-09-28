@@ -2,27 +2,109 @@
 
 Your contributions are always welcome!
 
-## Guidelines
+## Quick steps
 
-* Add one link per Pull Request.
-    * Make sure the PR title is in the format of `Add project-name`.
-    * Write down the reason why the library is awesome.
-* Add the link: `* [project-name](http://example.com/) - A short description ends with a period.`
-    * Keep descriptions concise and **short**.
-* Add a section if needed.
-    * Add the section description.
-    * Add the section title to Table of Contents.
-* Search previous Pull Requests or Issues before making a new one, as yours may be a duplicate.
-* Don't mention `Python` in the description as it's implied.
-* Check your spelling and grammar.
-* Remove any trailing whitespace.
+1. Create a new file in `patterns/` using kebab-case.
+2. Copy the template from [`TEMPLATE.md`](https://github.com/nibzard/awesome-agentic-patterns/blob/main/TEMPLATE.md).
+3. Open a PR titled `Add: pattern-name`.
 
-## Pattern file template
+## Pattern Schema
 
-Create a new file under `patterns/` named with *kebab‑case* and follow the provided minimal [`TEMPLATE`](https://github.com/nibzard/awesome-agentic-patterns/blob/main/TEMPLATE.md).
+All patterns must follow the schema defined in [`SCHEMA.md`](SCHEMA.md). This includes:
 
-*Keep it concise — max ~200 lines per pattern.*
+- Required front matter fields
+- Optional front matter fields
+- Required body sections
+- Optional body sections
 
-A simple Python script (`scripts/build_readme.py`) parses front‑matter from every pattern, updates the tables in this README, and refreshes the MkDocs navigation. A GitHub Action runs the script on every `main` push so the site at **agentic‑patterns.com** is always up‑to‑date.
+### Required Front Matter
 
-Just a gentle reminder: **Try not to submit your own project. Instead, wait for someone finds it useful and submits it for you.**
+Every pattern MUST include these fields:
+
+```yaml
+---
+title: "Pattern Title Here"
+status: emerging  # proposed, emerging, established, validated-in-production, best-practice, experimental-but-awesome, rapidly-improving
+authors: ["Contributor Name (@username)"]
+category: "Feedback Loops"  # See SCHEMA.md for all categories
+source: "https://example.com/reference"
+tags: [tag1, tag2, tag3]
+summary: "One sentence that says what the pattern does (the solution, not the problem)"
+signals: ["When this pattern helps"]  # 2-4 items; shown as "Use when"
+anti_signals: ["When it is a bad fit"]  # 2-3 items; shown as "Avoid when"
+---
+```
+
+### Optional Front Matter
+
+These fields MAY be added to provide additional context:
+
+```yaml
+---
+based_on: ["Original Creator (Source)"]
+slug: "pattern-slug"  # Auto-generated from title if omitted
+maturity: "maturing"  # early, maturing, mature
+complexity: "medium"  # low, medium, high
+effort: "days"  # hours, days, weeks
+impact: "high"  # low, medium, high
+prerequisites: ["Prereq 1", "Prereq 2"]
+related: ["other-pattern-id"]
+anti_patterns: ["opposing-pattern-id"]
+tools: ["tool-type-1", "tool-type-2"]
+domains: ["coding", "research", "ops"]
+updated_at: "2025-01-13"
+---
+```
+
+See [`SCHEMA.md`](SCHEMA.md) for complete field definitions and enum values.
+
+## Rules
+
+* One pattern per PR.
+* Keep the pattern concise (max ~200 lines) and backed by a public reference.
+* Fill in all required front matter fields.
+* Include all required body sections: Problem, Solution, How to use it, Trade-offs, References.
+* Do not edit README sections between the AUTO-GENERATED markers.
+* `docs/index.md` is a compatibility symlink to `README.md`; do not maintain separate content there.
+* Check spelling/grammar and remove trailing whitespace.
+* Keep contributions community-first: no promotional, sales, affiliate, or backlink-seeding content.
+* For external contributors, external links should generally be limited to `github.com`, `github.io`, or non-vendor neutral references (papers, standards, neutral technical write-ups).
+* Vendor/product links are considered only in rare cases where the contribution is truly novel and adds clear value. Explain the novelty explicitly.
+* Proposals must be materially novel and non-repetitive relative to existing patterns in this repository.
+
+## Submission policy: pattern-first and non-promotional
+
+This repository is for reusable patterns, not product marketing.
+
+A PR is accepted only when it documents a reusable engineering or design pattern. Brand names are okay only as examples or references, not as the center of the PR.
+
+### Hard constraints
+
+* The submission must clearly define a generalized Problem, Solution, and Trade-offs.
+* The PR must not read like a product announcement.
+* Promotional language and calls to action (e.g. "try now", "sign up", "buy", "subscribe", "join our ...") are not acceptable.
+* Known implementations can be listed in `Known Implementations`/references, but the write-up must explain *how the pattern works generally*.
+* If the primary reference belongs to the contributor or an affiliated project:
+  * state that relationship in front-matter (`authors` / `based_on`);
+  * add non-self references when possible;
+  * avoid promotional positioning of that project.
+
+### Maintainer decision rubric
+
+* **Accept**: all hard constraints met and the pattern is clearly reusable.
+* **Request changes**: mostly good pattern intent with clear fixes.
+* **Close**: mostly self-promotion or no reusable pattern.
+
+### Review checklist (copy into PR reviews)
+
+* [ ] This is about a reusable pattern, not a launch post.
+* [ ] Problem, Solution, and Trade-offs are present and specific.
+* [ ] No marketing/CTA language in body or references section.
+* [ ] Source links are public and verifiable.
+* [ ] Any contributor-owned project references are disclosed and framed as examples only.
+
+## Optional local checks
+
+* `bun run validate:patterns`
+* `bun run validate:patterns:content`
+* `bun run build:data`

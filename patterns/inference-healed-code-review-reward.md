@@ -6,6 +6,10 @@ based_on: ["Anonymous Speaker (Open Source Agent RL Talk)", "Will Brown (Prime I
 category: "Feedback Loops"
 source: "https://www.youtube.com/watch?v=Xkwok_XXQgw"
 tags: [reward-modeling, code-review, inference-healing, quality-assessment]
+summary: "Replaces a binary tests-passed reward with a critic that scores correctness, style, performance, and security, explains low scores, and combines them"
+signals: ["RL coding agents pass tests but produce low-quality patches", "The agent needs to know which quality aspect caused a low reward", "Linters, benchmarks, and static analyzers are available to feed sub-scores"]
+anti_signals: ["Test pass/fail fully captures what you care about", "Reward latency and compute from extra checks is not acceptable", "No labeled patch data to train or calibrate the critic"]
+updated_at: "2026-03-11"
 ---
 
 ## Problem
@@ -28,10 +32,11 @@ Use an **inference-healed reward model**—a code-review critic that:
 **2. Runs Internal Chain-of-Thought (CoT) Reasoning**
 - If uncertain about a subcriterion (e.g., performance), the critic runs a short CoT inside itself:
   ```text
-  "Step: performance check. Baseline runtime: 50ms. New code runtime: 65ms. 
-  Regression > 20%. Score: 0.4."  
+  "Step: performance check. Baseline runtime: 50ms. New code runtime: 65ms.
+  Regression > 20%. Score: 0.4."
   ```
 - This "inference healing" allows the reward model to **explain** each sub-score.
+- Use smaller critic models (1–2B parameters) to keep CoT generation cost-efficient.
 
 **3. Aggregates Subscores**
 - Each subcriterion returns a float ∈ [0, 1].
@@ -68,6 +73,8 @@ return final_score, subscores, comments
 - **Critic Dataset Collection:** Gather examples of good vs. bad code patches, labeled along each subcriterion.
 - **Critic Training:** Fine-tune a small LLM (e.g., 1–2 B parameters) to produce sub-scores and CoT justifications.
 - **Integration into RL Loop:** Replace or augment the existing binary "tests-passed" reward with `inference_healed_reward(patch)`.
+- **Selective Healing:** Generate CoT explanations only for subscores below a threshold (e.g., < 0.8) to reduce latency and cost.
+- **Parallel Execution:** Run tests, linters, benchmarks, and security scans concurrently to reduce total evaluation time.
 - **Human-in-the-Loop Checkpoints:** If a patch is borderline (e.g., final_score ∈ [0.5, 0.7]), route it for manual code review to generate better labels for future training.
 
 ## Trade-offs
@@ -83,3 +90,7 @@ return final_score, subscores, comments
 
 - Derived from "inference healing" in reward modeling, as discussed in the Open Source Agent RL talk (May 2025) and by Will Brown (Prime Intellect).
 - Similar principles in "Criterion-Led Reward Models" (DeepMind blog, April 2025).
+- Related academic work: "CodeRL: Mastering Code Generation through Pretrained Models and Deep Reinforcement Learning" (NeurIPS 2022) introduces critic-based reward signals for code generation.
+- Industry validation: Multi-criteria code review deployed at scale by Microsoft (600K+ PRs/month), Tencent (325M lines/month), and Tekion (60% faster time to merge).
+
+- Primary source: https://www.youtube.com/watch?v=Xkwok_XXQgw

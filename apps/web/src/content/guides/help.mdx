@@ -1,0 +1,168 @@
+---
+title: 'Local Development'
+description: 'Set up the site locally, validate patterns, and work with the current Bun-based workflow.'
+order: 2
+---
+
+## Overview
+
+This repository is now Bun-first and Astro-first. The main workflow is:
+
+1. Install dependencies with Bun
+2. Run the web app locally
+3. Validate pattern content before you ship changes
+4. Rebuild generated data when source pattern files change
+
+## Prerequisites
+
+- Bun
+- Git
+- A code editor
+
+## Clone and Install
+
+```bash
+git clone https://github.com/nibzard/awesome-agentic-patterns.git
+cd awesome-agentic-patterns
+bun install
+```
+
+## Core Commands
+
+Run these from the repository root unless noted otherwise.
+
+```bash
+# Start the Astro app locally
+bun run dev
+
+# Build generated data and the production site
+bun run build
+
+# Validate frontmatter and required fields
+bun run validate:patterns
+
+# Run stricter content validation
+bun run validate:patterns:content
+
+# Rebuild generated JSON, feeds, and static exports without a full site build
+bun run build:data
+```
+
+The local site is available at `http://localhost:4321`.
+
+## What Lives Where
+
+```text
+awesome-agentic-patterns/
+├── patterns/                # Source-of-truth markdown entries
+├── apps/
+│   └── web/
+│       ├── src/
+│       │   ├── components/  # Shared UI
+│       │   ├── content/     # Guides and packs content collections
+│       │   ├── layouts/     # Page shells
+│       │   └── pages/       # Astro routes
+│       └── public/
+│           └── data/        # Generated pattern and graph data
+├── scripts/                 # Data generation and validation scripts
+└── README.md                # Project overview and generated catalog sections
+```
+
+## Adding or Editing Patterns
+
+1. Start from [TEMPLATE.md](https://github.com/nibzard/awesome-agentic-patterns/blob/main/TEMPLATE.md) or [patterns/TEMPLATE.md](https://github.com/nibzard/awesome-agentic-patterns/blob/main/patterns/TEMPLATE.md).
+2. Add or update the markdown file in `patterns/`.
+3. Make sure frontmatter is complete:
+   - `title`
+   - `status`
+   - `authors`
+   - `category`
+   - `source`
+   - `tags`
+   - `updated_at` when the content changed materially
+4. Run:
+
+```bash
+bun run validate:patterns
+bun run validate:patterns:content
+bun run build:data
+```
+
+This regenerates the README catalog sections as well as the site data under `apps/web/public/`.
+
+5. Preview the site with `bun run dev` and check the pattern page in the browser.
+
+## Editing Guides and Site Copy
+
+- Guides live in `apps/web/src/content/guides/`
+- Shared UI lives in `apps/web/src/components/`
+- Browse and detail pages live in `apps/web/src/pages/`
+
+If you only changed guides or page copy, `bun run dev` is usually enough. If you changed pattern source files, regenerate data with `bun run build:data`.
+
+## Build Outputs
+
+The production site build goes to `apps/web/dist/`.
+
+Generated public data for the site lives under `apps/web/public/data/`.
+
+## Common Tasks
+
+### Work on the design or UI
+
+```bash
+bun run dev
+```
+
+Edit files in `apps/web/src/`.
+
+### Validate a pattern submission
+
+```bash
+bun run validate:patterns
+bun run validate:patterns:content
+```
+
+### Refresh generated catalog data
+
+```bash
+bun run build:data
+```
+
+### Produce a production build
+
+```bash
+bun run build
+```
+
+## Troubleshooting
+
+### `bun` not found
+
+Install Bun, then verify:
+
+```bash
+bun --version
+```
+
+### Port 4321 already in use
+
+```bash
+bun run dev -- --port 4322
+```
+
+### Pattern data looks stale
+
+Rebuild generated data from the root:
+
+```bash
+bun run build:data
+```
+
+### Validation fails on `updated_at`
+
+Use `YYYY-MM-DD` format, for example:
+
+```yaml
+updated_at: '2026-03-11'
+```

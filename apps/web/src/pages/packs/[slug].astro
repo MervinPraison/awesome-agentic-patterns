@@ -1,0 +1,12 @@
+---
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const packs = await getCollection('packs');
+  return packs.map((pack) => ({
+    params: { slug: pack.id },
+  }));
+}
+
+return Astro.redirect('/patterns');
+---

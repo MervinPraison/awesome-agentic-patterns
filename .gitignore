@@ -33,6 +33,10 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# Allow Astro app lib files (ignored by the generic "lib/" rule above)
+!apps/web/src/lib/
+!apps/web/src/lib/**
+
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
@@ -201,3 +205,15 @@ cython_debug/
 .cursorindexingignore
 
 node_modules/
+.vercel/
+
+# Pagefind search index (generated during build)
+apps/web/public/pagefind/
+
+# GitHub star count (fetched by build-data.ts, committed as fallback for CI)
+# apps/web/src/data/github-stars.json
+.env*.local
+
+# Claude research loop state/logs
+research/logs/
+research/pattern-research-tracker.json

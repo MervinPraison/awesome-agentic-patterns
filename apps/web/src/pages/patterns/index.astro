@@ -1,0 +1,17 @@
+---
+// ABOUTME: Catalog alias at /patterns so older links with filter parameters keep working.
+// ABOUTME: Renders the same catalog as the homepage with the canonical URL set to /.
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import Catalog from '../../components/Catalog.astro';
+import { getAllPatterns } from '../../lib/patterns';
+
+const patterns = await getAllPatterns();
+---
+
+<DocsLayout
+  title="Patterns - Agentic Patterns"
+  description={`Browse ${patterns.length} design patterns for building AI agents.`}
+  canonicalPath="/"
+>
+  <Catalog {patterns} />
+</DocsLayout>

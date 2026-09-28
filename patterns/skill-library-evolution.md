@@ -1,11 +1,30 @@
 ---
 title: Skill Library Evolution
 status: established
-authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Anthropic Engineering Team"]
+authors:
+  - Nikola Balic (@nibzard)
+based_on:
+  - Anthropic Engineering Team
+  - Will Larson (Imprint)
+  - Amp (Nicolay)
 category: Learning & Adaptation
-source: "https://www.anthropic.com/engineering/code-execution-with-mcp"
-tags: [code-reuse, skills, learning, capabilities, evolution]
+source: 'https://www.anthropic.com/engineering/code-execution-with-mcp'
+tags:
+  - code-reuse
+  - skills
+  - learning
+  - capabilities
+  - evolution
+  - progressive-disclosure
+  - on-demand-loading
+  - mcp
+  - lazy-loading
+slug: skill-library-evolution
+id: skill-library-evolution
+summary: "Saves working agent code as reusable skills in a skills directory, documents and tests them over time, and loads skill details only on demand"
+signals: ["Agents solve similar problems across sessions", "Agents rewrite the same code and waste tokens", "Many skills or MCP tools would bloat context if loaded up front"]
+anti_signals: ["One-off tasks with no repeated problems", "No capacity to test, review, and deprecate saved skills"]
+updated_at: '2026-01-13'
 ---
 
 ## Problem
@@ -15,6 +34,11 @@ Agents frequently solve similar problems across different sessions or workflows.
 ## Solution
 
 Agents persist working code implementations as reusable functions in a `skills/` directory. Over time, these implementations evolve into well-documented, tested "skills" that become higher-level capabilities the agent can leverage.
+
+**Skill types:**
+
+- **Atomic skills**: Single-purpose functions (e.g., `analyze_sentiment`) that serve as building blocks
+- **Composite skills**: Multi-step workflows that combine atomic skills into higher-level capabilities
 
 **Evolution path:**
 
@@ -80,6 +104,70 @@ def analyze_sentiment(text, granularity='binary'):
     # Refined implementation
     pass
 ```
+
+**Progressive disclosure with on-demand loading (Imprint approach):**
+
+Instead of loading all skills into context, inject skill descriptions into system prompt and provide a `load_skills` tool for full content:
+
+```yaml
+# skills/pdf-processing/SKILL.md
+---
+name: pdf-processing
+description: Extract text and tables from PDF documents
+metadata:
+  author: example-org
+  version: "1.0"
+---
+```
+
+```python
+# System prompt injection
+AVAILABLE_SKILLS = """
+Available skills (use load_skills tool to read full content):
+
+- pdf-processing: Extract text and tables from PDF documents
+- slack-formatting: Format messages for Slack with proper mrkdwn
+- large-file-handling: Handle files exceeding context window
+"""
+
+# Tool for on-demand loading
+def load_skills(skill_names):
+    """Load full skill content into context."""
+    for name in skill_names:
+        path = f"skills/{name}/SKILL.md"
+        # Read and inject full content
+```
+
+**Benefits of progressive disclosure:**
+- Reduces conflicting or unnecessary context
+- Minimizes formatting inconsistencies (e.g., Markdown vs Slack mrkdwn)
+- In-context learning examples stay focused on relevant tools
+
+**Lazy-loading MCP tools via skills (Amp approach):**
+
+MCP servers often expose many tools that consume significant context. Bind MCP servers to skills with selective tool loading:
+
+```json
+// skills/chrome-automation/mcp.json
+{
+  "chrome-devtools": {
+    "command": "npx",
+    "args": ["-y", "chrome-devtools-mcp@latest"],
+    "includeTools": [
+      "navigate_page",
+      "take_screenshot",
+      "new_page",
+      "list_pages"
+    ]
+  }
+}
+```
+
+**Token savings example:**
+- chrome-devtools MCP: 26 tools = 17k tokens
+- Lazy-loaded subset: 4 tools = 1.5k tokens (91% reduction)
+
+The agent sees only the skill description initially. When invoked, only the specified tools are loaded into context.
 
 ## How to use it
 
@@ -186,7 +274,19 @@ def discover_skills():
 - Periodic skill library review and curation
 - Examples and test cases for each skill
 
+**Anti-patterns to avoid:**
+
+| Anti-Pattern | Consequence | Correct Approach |
+|--------------|-------------|------------------|
+| **Hard-coded values** | Not reusable | Parameterize inputs |
+| **No documentation** | Not discoverable | Add docstrings and examples |
+| **Monolithic skills** | Not composable | Split into atomic units |
+| **No testing** | Unreliable | Add validation tests |
+| **Prompt bloat** | Context overflow | Progressive disclosure |
+
 ## References
 
 * Anthropic Engineering: Code Execution with MCP (2024)
-* Related: Compounding Engineering Pattern
+* [Building an internal agent: Adding support for Agent Skills](https://lethain.com/agents-skills/) - Will Larson (Imprint, 2025)
+* [Efficient MCP Tool Loading](https://ampcode.com/news/lazy-load-mcp-with-skills) - Amp (Nicolay, 2025)
+* Related: Compounding Engineering Pattern, CLI-First Skill Design

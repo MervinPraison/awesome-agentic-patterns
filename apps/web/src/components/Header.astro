@@ -1,0 +1,989 @@
+---
+// ABOUTME: Site header: logo, main navigation, search (Pagefind, opened with ⌘K), GitHub link, theme toggle.
+// ABOUTME: Includes the search modal and the mobile navigation menu.
+import ThemeToggle from './ThemeToggle.astro';
+import { getGithubStarCount } from '../lib/github-stars';
+
+interface Props {
+  currentPath?: string;
+}
+
+const { currentPath = '/' } = Astro.props;
+const repoUrl = 'https://github.com/nibzard/awesome-agentic-patterns';
+const githubStarCount = getGithubStarCount();
+
+const navItems = [
+  { href: '/', label: 'Patterns', match: ['/', '/patterns'] },
+  { href: '/guides', label: 'Guides', match: ['/guides'] },
+  { href: '/decision', label: 'Decide', match: ['/decision'] },
+  { href: '/graph', label: 'Graph', match: ['/graph'] },
+  { href: '/agents', label: 'For agents', match: ['/agents'] },
+];
+
+const normalizedPath = currentPath.replace(/\/$/, '') || '/';
+const isActive = (item: (typeof navItems)[number]) =>
+  item.match.some((prefix) =>
+    prefix === '/'
+      ? normalizedPath === '/'
+      : normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`)
+  );
+---
+
+<header class="header">
+  <div class="header-container">
+    <a href="/" class="logo">
+      <svg
+        width="24"
+        height="24"
+        viewBox="0 0 32 32"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <rect width="32" height="32" rx="6" fill="currentColor"></rect>
+        <path
+          d="M10 16L14 12L18 16L22 12"
+          stroke="white"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+        <path
+          d="M10 22L14 18L18 22L22 18"
+          stroke="white"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"></path>
+      </svg>
+      <span>Agentic Patterns</span>
+    </a>
+
+    <nav class="nav" aria-label="Main navigation">
+      <ul class="nav-list">
+        {
+          navItems.map((item) => (
+            <li class="nav-item">
+              <a
+                href={item.href}
+                class:list={['nav-link', { active: isActive(item) }]}
+                aria-current={isActive(item) ? 'page' : undefined}
+              >
+                {item.label}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <div class="header-actions">
+      <a
+        class="repo-link"
+        href={repoUrl}
+        target="_blank"
+        rel="noreferrer"
+        aria-label="Open GitHub repository"
+      >
+        <svg width="18" height="18" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"
+          ><path
+            d="M32.029,8.345c-13.27,0 -24.029,10.759 -24.029,24.033c0,10.617 6.885,19.624 16.435,22.803c1.202,0.22 1.64,-0.522 1.64,-1.16c0,-0.569 -0.02,-2.081 -0.032,-4.086c-6.685,1.452 -8.095,-3.222 -8.095,-3.222c-1.093,-2.775 -2.669,-3.514 -2.669,-3.514c-2.182,-1.492 0.165,-1.462 0.165,-1.462c2.412,0.171 3.681,2.477 3.681,2.477c2.144,3.672 5.625,2.611 6.994,1.997c0.219,-1.553 0.838,-2.612 1.526,-3.213c-5.336,-0.606 -10.947,-2.669 -10.947,-11.877c0,-2.623 0.937,-4.769 2.474,-6.449c-0.247,-0.608 -1.072,-3.051 0.235,-6.36c0,0 2.018,-0.646 6.609,2.464c1.917,-0.533 3.973,-0.8 6.016,-0.809c2.041,0.009 4.097,0.276 6.017,0.809c4.588,-3.11 6.602,-2.464 6.602,-2.464c1.311,3.309 0.486,5.752 0.239,6.36c1.54,1.68 2.471,3.826 2.471,6.449c0,9.232 -5.62,11.263 -10.974,11.858c0.864,0.742 1.632,2.208 1.632,4.451c0,3.212 -0.029,5.804 -0.029,6.591c0,0.644 0.432,1.392 1.652,1.157c9.542,-3.185 16.421,-12.186 16.421,-22.8c0,-13.274 -10.76,-24.033 -24.034,-24.033"
+          ></path></svg
+        >
+        {
+          githubStarCount && (
+            <span class="repo-link-count" aria-label={`${githubStarCount} GitHub stars`}>
+              {githubStarCount}
+            </span>
+          )
+        }
+      </a>
+      <button id="search-toggle" class="search-toggle" aria-label="Search">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M9 17A8 8 0 1 0 9 1A8 8 0 0 0 9 17Z"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+          <path
+            d="M19 19L13.5 13.5"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+        <span>Search patterns</span>
+        <kbd class="search-toggle-kbd">⌘K</kbd>
+      </button>
+      <ThemeToggle />
+    </div>
+
+    <!-- Mobile Menu Toggle -->
+    <button
+      id="mobile-menu-toggle"
+      class="mobile-menu-toggle"
+      aria-label="Open navigation menu"
+      aria-expanded="false"
+      aria-controls="mobile-menu"
+    >
+      <span class="hamburger">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+      </span>
+    </button>
+
+    <!-- Search Modal -->
+    <div
+      id="search-modal"
+      class="search-modal"
+      hidden
+      inert
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Search patterns"
+    >
+      <div class="search-backdrop"></div>
+      <div class="search-container">
+        <button type="button" class="search-close" aria-label="Close search">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M3 3L13 13M13 3L3 13"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"></path>
+          </svg>
+        </button>
+        <div class="search-input-wrapper">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 20 20"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            class="search-icon"
+          >
+            <path
+              d="M9 17A8 8 0 1 0 9 1A8 8 0 0 0 9 17Z"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+            <path
+              d="M19 19L13.5 13.5"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"></path>
+          </svg>
+          <input
+            id="search-input"
+            type="text"
+            placeholder="Search patterns..."
+            autocomplete="off"
+            aria-label="Search patterns"
+            aria-describedby="search-instructions"
+            role="searchbox"
+            aria-autocomplete="list"
+          />
+          <kbd id="search-shortcut">⌘K</kbd>
+        </div>
+        <div
+          id="search-results"
+          class="search-results"
+          role="region"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+        </div>
+        <div class="search-footer" id="search-instructions">
+          <span>Use <kbd>↑</kbd> <kbd>↓</kbd> to navigate</span>
+          <span><kbd>↵</kbd> to select</span>
+          <span><kbd>esc</kbd> to close</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Search functionality using Pagefind
+      let searchIndex = null;
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      let currentQuery = '';
+      let currentResults = [];
+      let selectedIndex = 0;
+      let lastSearchTrigger = null;
+
+      const searchModal = document.getElementById('search-modal');
+      const searchInput = document.getElementById('search-input');
+      const searchResults = document.getElementById('search-results');
+      const searchToggle = document.getElementById('search-toggle');
+      const searchClose = document.querySelector('.search-close');
+
+      function setSearchOpenState(isOpen) {
+        searchModal.hidden = !isOpen;
+        searchModal.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+        searchModal.toggleAttribute('inert', !isOpen);
+        document.body.style.overflow = isOpen ? 'hidden' : '';
+      }
+
+      // Load Pagefind index
+      async function loadSearchIndex() {
+        if (searchIndex) return searchIndex;
+        try {
+          // Pagefind's JS API is an ES module; load it with a dynamic import.
+          // (It does NOT set window.pagefind, so a <script>-tag + global poll never resolves.)
+          // The index exists only after a production build, so keep the URL out of Vite's
+          // import analysis. In `astro dev` the import fails and search shows its error message.
+          const pagefindUrl = '/pagefind/pagefind.js';
+          searchIndex = await import(/* @vite-ignore */ pagefindUrl);
+          return searchIndex;
+        } catch (e) {
+          // Show error message in search results
+          searchResults.innerHTML = import.meta.env.DEV
+            ? '<div class="search-error" role="alert">Search needs the Pagefind index, which only a production build creates. Run <code>bun run build</code> to test search.</div>'
+            : '<div class="search-error" role="alert">Search is currently unavailable. Please try again later or use the navigation to browse patterns.</div>';
+          return null;
+        }
+      }
+
+      // Perform search
+      async function performSearch(query) {
+        const pagefind = await loadSearchIndex();
+        if (!pagefind) return;
+
+        currentQuery = query;
+
+        if (query.trim().length < 2) {
+          searchResults.innerHTML =
+            '<div class="search-empty">Enter at least 2 characters to search</div>';
+          return;
+        }
+
+        try {
+          const results = await pagefind.search(query);
+          currentResults = results.results;
+          selectedIndex = 0;
+
+          await renderResults();
+        } catch (e) {
+          searchResults.innerHTML =
+            '<div class="search-error" role="alert">Search failed. Please try again.</div>';
+        }
+      }
+
+      // Render search results
+      async function renderResults() {
+        if (currentResults.length === 0) {
+          searchResults.innerHTML =
+            '<div class="search-empty" role="status">No results found</div>';
+          return;
+        }
+
+        // Pagefind results are lazy: resolve each via result.data() to get url/excerpt/meta.
+        const resolved = await Promise.all(currentResults.map((result) => result.data()));
+        const resultCount = resolved.length;
+        searchResults.innerHTML = resolved
+          .map(
+            (data, index) => `
+          <a
+            href="${data.url}"
+            class="search-result ${index === selectedIndex ? 'search-result--selected' : ''}"
+            data-index="${index}"
+            role="option"
+            aria-selected="${index === selectedIndex ? 'true' : 'false'}"
+          >
+            <div class="search-result-title">${data.meta?.title || 'Untitled'}</div>
+            <div class="search-result-excerpt">${data.excerpt || ''}</div>
+          </a>
+        `
+          )
+          .join('');
+
+        // Announce results to screen readers
+        searchResults.setAttribute(
+          'aria-label',
+          `${resultCount} result${resultCount !== 1 ? 's' : ''} found`
+        );
+      }
+
+      // Open search modal
+      function openSearch(trigger = document.activeElement) {
+        lastSearchTrigger = trigger instanceof HTMLElement ? trigger : searchToggle;
+        setSearchOpenState(true);
+        searchInput.focus();
+      }
+
+      // Close search modal
+      function closeSearch() {
+        const focusTarget =
+          lastSearchTrigger instanceof HTMLElement ? lastSearchTrigger : searchToggle;
+
+        if (focusTarget instanceof HTMLElement) {
+          focusTarget.focus();
+        } else if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+
+        setSearchOpenState(false);
+        searchInput.value = '';
+        searchResults.innerHTML = '';
+        currentQuery = '';
+        currentResults = [];
+      }
+
+      // Event listeners
+      searchToggle?.addEventListener('click', () => openSearch(searchToggle));
+
+      searchModal?.querySelector('.search-backdrop')?.addEventListener('click', closeSearch);
+      searchClose?.addEventListener('click', closeSearch);
+
+      searchInput?.addEventListener('input', (e) => {
+        performSearch(e.target.value);
+      });
+
+      searchInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeSearch();
+        } else if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectedIndex = Math.min(selectedIndex + 1, currentResults.length - 1);
+          renderResults();
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectedIndex = Math.max(selectedIndex - 1, 0);
+          renderResults();
+        } else if (e.key === 'Enter' && currentResults.length > 0) {
+          window.location.href = currentResults[selectedIndex].url;
+        }
+      });
+
+      // Keyboard shortcut
+      document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+          e.preventDefault();
+          openSearch(document.activeElement);
+        }
+      });
+
+      // Delegate click events for dynamic results
+      searchResults?.addEventListener('click', (e) => {
+        const result = e.target instanceof Element ? e.target.closest('.search-result') : null;
+        if (result) {
+          window.location.href = result.href;
+        }
+      });
+
+      // Mobile menu functionality
+      const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+      const mobileMenu = document.getElementById('mobile-menu');
+
+      function openMobileMenu() {
+        mobileMenu.hidden = false;
+        mobileMenu.setAttribute('aria-hidden', 'false');
+        mobileMenuToggle.setAttribute('aria-expanded', 'true');
+        mobileMenuToggle.setAttribute('aria-label', 'Close navigation menu');
+        document.body.style.overflow = 'hidden';
+        mobileMenu.querySelector('.mobile-menu-link')?.focus();
+      }
+
+      function closeMobileMenu() {
+        mobileMenu.hidden = true;
+        mobileMenu.setAttribute('aria-hidden', 'true');
+        mobileMenuToggle.setAttribute('aria-expanded', 'false');
+        mobileMenuToggle.setAttribute('aria-label', 'Open navigation menu');
+        document.body.style.overflow = '';
+        mobileMenuToggle.focus();
+      }
+
+      function toggleMobileMenu() {
+        const isOpen = mobileMenuToggle.getAttribute('aria-expanded') === 'true';
+        isOpen ? closeMobileMenu() : openMobileMenu();
+      }
+
+      // Event listeners
+      mobileMenuToggle?.addEventListener('click', toggleMobileMenu);
+
+      mobileMenu
+        ?.querySelector('.mobile-menu-backdrop')
+        ?.addEventListener('click', closeMobileMenu);
+
+      mobileMenu?.querySelectorAll('.mobile-menu-link').forEach((link) => {
+        link.addEventListener('click', closeMobileMenu);
+      });
+
+      // Keyboard navigation
+      mobileMenu?.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeMobileMenu();
+        }
+      });
+    </script>
+  </div>
+
+  <!-- Mobile Menu -->
+  <div
+    id="mobile-menu"
+    class="mobile-menu"
+    hidden
+    aria-hidden="true"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Navigation menu"
+  >
+    <div class="mobile-menu-backdrop"></div>
+    <div class="mobile-menu-container">
+      <nav class="mobile-menu-nav" aria-label="Mobile navigation">
+        <ul class="mobile-menu-list">
+          {
+            navItems.map((item) => (
+              <li>
+                <a
+                  href={item.href}
+                  class:list={['mobile-menu-link', { active: isActive(item) }]}
+                  aria-current={isActive(item) ? 'page' : undefined}
+                >
+                  {item.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+      <div class="mobile-menu-footer">
+        <a
+          class="repo-link repo-link--mobile"
+          href={repoUrl}
+          target="_blank"
+          rel="noreferrer"
+          aria-label="Open GitHub repository"
+        >
+          <svg width="18" height="18" viewBox="0 0 64 64" fill="currentColor" aria-hidden="true"
+            ><path
+              d="M32.029,8.345c-13.27,0 -24.029,10.759 -24.029,24.033c0,10.617 6.885,19.624 16.435,22.803c1.202,0.22 1.64,-0.522 1.64,-1.16c0,-0.569 -0.02,-2.081 -0.032,-4.086c-6.685,1.452 -8.095,-3.222 -8.095,-3.222c-1.093,-2.775 -2.669,-3.514 -2.669,-3.514c-2.182,-1.492 0.165,-1.462 0.165,-1.462c2.412,0.171 3.681,2.477 3.681,2.477c2.144,3.672 5.625,2.611 6.994,1.997c0.219,-1.553 0.838,-2.612 1.526,-3.213c-5.336,-0.606 -10.947,-2.669 -10.947,-11.877c0,-2.623 0.937,-4.769 2.474,-6.449c-0.247,-0.608 -1.072,-3.051 0.235,-6.36c0,0 2.018,-0.646 6.609,2.464c1.917,-0.533 3.973,-0.8 6.016,-0.809c2.041,0.009 4.097,0.276 6.017,0.809c4.588,-3.11 6.602,-2.464 6.602,-2.464c1.311,3.309 0.486,5.752 0.239,6.36c1.54,1.68 2.471,3.826 2.471,6.449c0,9.232 -5.62,11.263 -10.974,11.858c0.864,0.742 1.632,2.208 1.632,4.451c0,3.212 -0.029,5.804 -0.029,6.591c0,0.644 0.432,1.392 1.652,1.157c9.542,-3.185 16.421,-12.186 16.421,-22.8c0,-13.274 -10.76,-24.033 -24.034,-24.033"
+            ></path></svg
+          >
+          {
+            githubStarCount && (
+              <span class="repo-link-count" aria-label={`${githubStarCount} GitHub stars`}>
+                {githubStarCount}
+              </span>
+            )
+          }
+          <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<script>
+  // Keep the build-time value visible until the cached live count arrives.
+  fetch('/api/github-stars')
+    .then((response) => {
+      if (!response.ok) throw new Error('GitHub star count unavailable');
+      return response.json();
+    })
+    .then(({ formatted }) => {
+      if (typeof formatted !== 'string' || !formatted) return;
+      document.querySelectorAll('.repo-link-count').forEach((element) => {
+        element.textContent = formatted;
+        element.setAttribute('aria-label', `${formatted} GitHub stars`);
+      });
+    })
+    .catch(() => {
+      // The build-time value remains visible if the live request fails.
+    });
+</script>
+
+<style>
+  .header {
+    border-bottom: 1px solid var(--color-border);
+    /* No backdrop-filter here: it makes the header the containing block for the
+       fixed search modal and mobile menu, which then only cover the header strip. */
+    background: var(--color-bg);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .header-container {
+    max-width: var(--page-max);
+    height: var(--header-height);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text);
+    white-space: nowrap;
+  }
+
+  .logo svg {
+    color: var(--color-primary);
+  }
+
+  .nav {
+    display: flex;
+  }
+
+  .nav-list {
+    display: flex;
+    gap: 0.125rem;
+    list-style: none;
+  }
+
+  .nav-link {
+    display: block;
+    color: var(--color-text-muted);
+    padding: 0.35rem 0.6rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .nav-link:hover {
+    color: var(--color-text);
+    background-color: var(--color-bg-soft);
+  }
+
+  .nav-link.active {
+    color: var(--color-text);
+    background-color: var(--color-bg-soft);
+  }
+
+  .header-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .repo-link {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 2rem;
+    padding: 0 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-bg-elevated);
+    color: var(--color-text);
+    font-size: 0.8125rem;
+    font-weight: 500;
+  }
+
+  .repo-link-count {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .repo-link:hover {
+    border-color: var(--color-divider);
+  }
+
+  .search-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 15rem;
+    height: 2rem;
+    padding: 0 0.4rem 0 0.6rem;
+    background-color: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 0.8125rem;
+  }
+
+  .search-toggle:hover {
+    border-color: var(--color-divider);
+  }
+
+  .search-toggle svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  .search-toggle-kbd {
+    margin-left: auto;
+    padding: 0 0.3rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    line-height: 1.4;
+  }
+
+  .search-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 15vh;
+  }
+
+  .search-modal[hidden] {
+    display: none !important;
+  }
+
+  .search-backdrop {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+  }
+
+  .search-container {
+    position: relative;
+    width: 100%;
+    max-width: 700px;
+    background-color: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+  }
+
+  .search-close {
+    position: absolute;
+    top: 0.75rem;
+    right: var(--spacing-sm);
+    z-index: 2;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .search-close:hover {
+    background-color: var(--color-bg-soft);
+    color: var(--color-text);
+  }
+
+  .search-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) 3.25rem var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .search-icon {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  .search-input-wrapper input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 1rem;
+    color: var(--color-text);
+    outline: none;
+  }
+
+  .search-input-wrapper input::placeholder {
+    color: var(--color-text-muted);
+  }
+
+  .search-input-wrapper kbd {
+    padding: 4px 8px;
+    background-color: var(--color-bg-soft);
+    border-radius: var(--radius-sm);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .search-results {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  :global(.search-empty) {
+    padding: var(--spacing-xl);
+    text-align: center;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+  }
+
+  :global(.search-error) {
+    padding: var(--spacing-xl);
+    text-align: center;
+    color: var(--color-error);
+    font-size: 0.9375rem;
+    background-color: var(--color-primary-light);
+    border-radius: var(--radius-md);
+  }
+
+  :global(.search-result) {
+    display: block;
+    padding: var(--spacing-md) var(--spacing-lg);
+    text-decoration: none;
+    color: var(--color-text);
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  :global(.search-result:hover),
+  :global(.search-result--selected) {
+    background-color: var(--color-bg-soft);
+    border-left-color: var(--color-primary);
+  }
+
+  :global(.search-result-title) {
+    font-weight: 500;
+    margin-bottom: var(--spacing-xs);
+  }
+
+  :global(.search-result-excerpt) {
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+  }
+
+  :global(.search-result-excerpt mark) {
+    background: var(--color-primary-light);
+    color: var(--color-text);
+    border-radius: 2px;
+  }
+
+  .search-footer {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    padding: var(--spacing-sm);
+    border-top: 1px solid var(--color-border);
+    background-color: var(--color-bg-soft);
+  }
+
+  .search-footer span {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+
+  .search-footer kbd {
+    padding: 2px 6px;
+    background-color: var(--color-bg-elevated);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+  }
+
+  /* Mobile Menu Toggle */
+  .mobile-menu-toggle {
+    display: none;
+    background: var(--color-bg-elevated);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: 0;
+    cursor: pointer;
+    width: 2rem;
+    height: 2rem;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-menu-toggle:hover {
+    background-color: var(--color-bg-elevated);
+  }
+
+  /* Hamburger Icon */
+  .hamburger {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    width: 14px;
+  }
+
+  .hamburger-line {
+    width: 100%;
+    height: 1.5px;
+    background-color: var(--color-text);
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    transform-origin: center;
+  }
+
+  /* Hamburger to X animation */
+  .mobile-menu-toggle[aria-expanded='true'] .hamburger-line:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+
+  .mobile-menu-toggle[aria-expanded='true'] .hamburger-line:nth-child(2) {
+    opacity: 0;
+  }
+
+  .mobile-menu-toggle[aria-expanded='true'] .hamburger-line:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+
+  /* Mobile Menu */
+  .mobile-menu {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 200;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .mobile-menu[hidden] {
+    display: none !important;
+  }
+
+  .mobile-menu-backdrop {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .mobile-menu:not([hidden]) .mobile-menu-backdrop {
+    opacity: 1;
+  }
+
+  .mobile-menu-container {
+    position: relative;
+    width: 100%;
+    /* Leave part of the backdrop visible so a tap outside the panel closes the menu. */
+    max-width: min(320px, 85vw);
+    background-color: var(--color-bg-elevated);
+    border-right: 1px solid var(--color-border);
+    height: 100%;
+    overflow-y: auto;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .mobile-menu:not([hidden]) .mobile-menu-container {
+    transform: translateX(0);
+  }
+
+  .mobile-menu-nav {
+    padding: var(--spacing-lg);
+    flex: 1;
+  }
+
+  .mobile-menu-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .mobile-menu-link {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg);
+    color: var(--color-text);
+    border-radius: var(--radius-md);
+    font-size: 1rem;
+    font-weight: 600;
+    min-height: 48px;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-menu-link:hover,
+  .mobile-menu-link:focus {
+    background-color: var(--color-bg-soft);
+    outline: none;
+  }
+
+  .mobile-menu-link.active {
+    color: var(--color-primary);
+    background-color: var(--color-primary-light);
+  }
+
+  .mobile-menu-footer {
+    padding: var(--spacing-lg);
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: center;
+  }
+
+  .repo-link--mobile {
+    width: 100%;
+    justify-content: center;
+  }
+
+  @media (max-width: 960px) {
+    .header-container {
+      flex-wrap: nowrap;
+    }
+
+    .nav {
+      display: none;
+    }
+
+    .nav-list {
+      justify-content: center;
+    }
+
+    .mobile-menu-toggle {
+      display: flex;
+    }
+
+    .header-actions .repo-link {
+      display: none;
+    }
+
+    .search-toggle {
+      width: auto;
+    }
+
+    .search-toggle span,
+    .search-toggle-kbd {
+      display: none;
+    }
+
+    .header-actions {
+      gap: var(--spacing-xs);
+    }
+  }
+</style>

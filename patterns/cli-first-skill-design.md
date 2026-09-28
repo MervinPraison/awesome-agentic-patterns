@@ -1,11 +1,26 @@
 ---
 title: CLI-First Skill Design
 status: emerging
-authors: ["Lucas Carlson"]
-based_on: ["Anthropic (Claude Code)", "Unix Philosophy"]
-category: "Tool Use & Environment"
-source: "https://github.com/anthropics/claude-code"
-tags: [cli, skills, shell, dual-use, composability, unix-philosophy]
+authors:
+  - Lucas Carlson
+based_on:
+  - Anthropic (Claude Code)
+  - Unix Philosophy
+category: Tool Use & Environment
+source: 'https://github.com/anthropics/claude-code'
+tags:
+  - cli
+  - skills
+  - shell
+  - dual-use
+  - composability
+  - unix-philosophy
+slug: cli-first-skill-design
+id: cli-first-skill-design
+summary: "Builds each skill as a standalone CLI with JSON output and exit codes so humans and agents use the same interface"
+signals: ["Skills must be usable by both humans and agents", "Teams maintain separate API and GUI interfaces for one skill", "Skills need to compose with Unix tools and scripts"]
+anti_signals: ["High-frequency calls above about 100 per second", "Complex object graphs or real-time streaming"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem
@@ -34,9 +49,10 @@ graph LR
 
 1. **One script, one skill**: Each capability is a standalone executable
 2. **Subcommands for operations**: `skill.sh list`, `skill.sh get <id>`, `skill.sh create`
-3. **Structured output**: JSON for programmatic use, human-readable for TTY
-4. **Exit codes**: 0 for success, non-zero for errors (enables `&&` chaining)
+3. **Structured output**: JSON for programmatic use, human-readable for TTY (auto-detect via `isatty()`)
+4. **Exit codes**: 0 for success, 1 for errors, 2 for incorrect usage, 127 if not found
 5. **Environment config**: Credentials via env vars, not hardcoded
+6. **Default non-interactive**: Avoid prompts; provide `--yes` or `--force` flags instead
 
 ```bash
 # Example: Trello skill as CLI
@@ -79,23 +95,24 @@ Bash: trello.sh cards abc123 | jq '.[0].name'
 - [ ] Standalone executable with shebang (`#!/bin/bash`)
 - [ ] Help text via `--help` or no-args
 - [ ] Subcommands for CRUD operations
-- [ ] JSON output (pipe to `jq` for formatting)
+- [ ] JSON output (or TTY auto-detection: `sys.stdout.isatty()` / `process.stdout.isTTY`)
 - [ ] Credentials from `~/.envrc` or environment
-- [ ] Meaningful exit codes
+- [ ] Meaningful exit codes (0=success, 1=error, 2=usage, 127=not found)
 - [ ] Stderr for errors, stdout for data
+- [ ] Non-interactive mode with `--yes`/`--force` flags
 
 **Composition example:**
 
 ```bash
 # priority-report.sh composes multiple skill CLIs
 #!/bin/bash
-echo "## GitHub"
+echo "-- GitHub --"
 gh pr list --search "review-requested:@me"
 
-echo "## Trello"
+echo "-- Trello --"
 ~/.claude/skills/trello/scripts/trello.sh cards abc123
 
-echo "## Asana"
+echo "-- Asana --"
 ~/.claude/skills/asana/scripts/asana.sh tasks personal
 ```
 
@@ -126,7 +143,12 @@ echo "## Asana"
 
 ## References
 
-* Unix Philosophy: "Write programs that do one thing and do it well"
+* Unix Philosophy (Doug McIlroy): "Write programs that do one thing and do it well"
+* POSIX exit code conventions: IEEE Std 1003.1
 * Dual-Use Tool Design pattern
-* Claude Code skills directory structure
+* Intelligent Bash Tool Execution pattern
 * 12-Factor App: Config via environment
+* Claude Code skills directory structure
+
+- Primary source: https://github.com/anthropics/claude-code
+- anthropics/skills: https://github.com/anthropics/skills

@@ -1,0 +1,1677 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getAllPatterns } from '../lib/patterns';
+import type { GraphNode } from '../types';
+
+const patterns = await getAllPatterns();
+const graphNodes = patterns.map((pattern) => ({
+  id: pattern.id,
+  title: pattern.title,
+  category: pattern.category,
+  status: pattern.status,
+  slug: pattern.slug,
+  tags: pattern.tags,
+  summary: pattern.summary,
+  maturity: pattern.maturity,
+  domains: pattern.domains,
+  related: pattern.related || [],
+  anti_patterns: pattern.anti_patterns || [],
+}));
+
+// Get unique values for filters
+const categories = [...new Set(graphNodes.map((n: GraphNode) => n.category))].sort();
+const statuses = [...new Set(graphNodes.map((n: GraphNode) => n.status))].sort();
+
+const tagMap = graphNodes.reduce((acc: Record<string, number>, node: GraphNode) => {
+  (node.tags || []).forEach((tag) => {
+    acc[tag] = (acc[tag] || 0) + 1;
+  });
+  return acc;
+}, {});
+
+const tags = Object.entries(tagMap)
+  .map(([tag, count]) => ({ tag, count }))
+  .sort((a, b) => b.count - a.count)
+  .slice(0, 20);
+
+const maturityMap = graphNodes.reduce((acc: Record<string, number>, node: GraphNode) => {
+  if (node.maturity) {
+    acc[node.maturity] = (acc[node.maturity] || 0) + 1;
+  }
+  return acc;
+}, {});
+
+const maturities = Object.entries(maturityMap)
+  .map(([maturity, count]) => ({ maturity, count }))
+  .sort((a, b) => b.count - a.count);
+
+const domainMap = graphNodes.reduce((acc: Record<string, number>, node: GraphNode) => {
+  (node.domains || []).forEach((domain) => {
+    acc[domain] = (acc[domain] || 0) + 1;
+  });
+  return acc;
+}, {});
+
+const domains = Object.entries(domainMap)
+  .map(([domain, count]) => ({ domain, count }))
+  .sort((a, b) => b.count - a.count);
+
+const positionedNodes = graphNodes.map((node: GraphNode, index: number) => {
+  const angle = (index / Math.max(graphNodes.length, 1)) * 2 * Math.PI;
+  const radius = 200 + (index % 3) * 50;
+  const x = 1000 + Math.cos(angle) * radius;
+  const y = 800 + Math.sin(angle) * radius;
+
+  return {
+    ...node,
+    x,
+    y,
+  };
+});
+
+// Helper functions for category/status colors
+function getCategoryColor(category: string): string {
+  const colors: Record<string, string> = {
+    'Orchestration & Control': '#3b82f6',
+    'Context & Memory': '#8b5cf6',
+    'Feedback Loops': '#ec4899',
+    'Learning & Adaptation': '#f59e0b',
+    'Reliability & Eval': '#10b981',
+    'Security & Safety': '#ef4444',
+    'Tool Use & Environment': '#06b6d4',
+    'UX & Collaboration': '#f97316',
+  };
+  return colors[category] || '#6b7280';
+}
+---
+
+<BaseLayout title="Pattern Graph - Awesome Agentic Patterns">
+  <div class="graph-page">
+    <section class="graph-hero">
+      <div class="graph-hero-copy">
+        <span class="section-label">Graph Explorer</span>
+        <h1>Pattern graph</h1>
+        <p class="graph-subtitle">
+          See which patterns connect by shared tags, category, explicit links, or similarity. Click
+          a node to open the pattern.
+        </p>
+      </div>
+    </section>
+
+    <div class="graph-layout">
+      <!-- Filters Sidebar -->
+      <aside class="graph-filters surface-panel">
+        <div class="filter-section">
+          <h3 class="filter-title">Connections</h3>
+          <div class="filter-options">
+            <label class="filter-option">
+              <input type="radio" name="graph-mode" value="tag" data-mode />
+              <span>Shared tags</span>
+            </label>
+            <label class="filter-option">
+              <input type="radio" name="graph-mode" value="category" data-mode />
+              <span>Shared category</span>
+            </label>
+            <label class="filter-option">
+              <input type="radio" name="graph-mode" value="related" data-mode />
+              <span>Explicit links</span>
+            </label>
+            <label class="filter-option">
+              <input type="radio" name="graph-mode" value="similarity" data-mode />
+              <span>Semantic similarity</span>
+            </label>
+          </div>
+          <p class="filter-hint">Change how connections are drawn between patterns.</p>
+        </div>
+
+        <div class="filter-section">
+          <h3 class="filter-title">Category</h3>
+          <div class="filter-options">
+            {
+              categories.map((category) => (
+                <label class="filter-option">
+                  <input type="checkbox" value={category} data-filter="category" />
+                  <span>{category}</span>
+                  <span class="filter-count">
+                    {graphNodes.filter((n: GraphNode) => n.category === category).length}
+                  </span>
+                </label>
+              ))
+            }
+          </div>
+        </div>
+
+        <div class="filter-section">
+          <h3 class="filter-title">Status</h3>
+          <div class="filter-options">
+            {
+              statuses.map((status) => (
+                <label class="filter-option">
+                  <input type="checkbox" value={status} data-filter="status" />
+                  <span>{status}</span>
+                  <span class="filter-count">
+                    {graphNodes.filter((n: GraphNode) => n.status === status).length}
+                  </span>
+                </label>
+              ))
+            }
+          </div>
+        </div>
+
+        {
+          maturities.length > 0 && (
+            <div class="filter-section">
+              <h3 class="filter-title">Maturity</h3>
+              <div class="filter-options">
+                {maturities.map(({ maturity, count }) => (
+                  <label class="filter-option">
+                    <input type="checkbox" value={maturity} data-filter="maturity" />
+                    <span>{maturity}</span>
+                    <span class="filter-count">{count}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )
+        }
+
+        {
+          tags.length > 0 && (
+            <div class="filter-section">
+              <h3 class="filter-title">Tags</h3>
+              <div class="filter-options">
+                {tags.map(({ tag, count }) => (
+                  <label class="filter-option">
+                    <input type="checkbox" value={tag} data-filter="tag" />
+                    <span>{tag}</span>
+                    <span class="filter-count">{count}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )
+        }
+
+        {
+          domains.length > 0 && (
+            <div class="filter-section">
+              <h3 class="filter-title">Domains</h3>
+              <div class="filter-options">
+                {domains.map(({ domain, count }) => (
+                  <label class="filter-option">
+                    <input type="checkbox" value={domain} data-filter="domain" />
+                    <span>{domain}</span>
+                    <span class="filter-count">{count}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )
+        }
+
+        <a href="/graph" class="clear-filters" id="graph-clear-filters" hidden>
+          Clear All Filters
+        </a>
+      </aside>
+
+      <!-- Graph Canvas -->
+      <div class="graph-canvas-container">
+        <div class="graph-info surface-panel">
+          Showing <span id="graph-count">{graphNodes.length}</span> of {graphNodes.length}
+          patterns · <span id="graph-edge-count">0</span> connections ·
+          <span id="graph-mode-label">Shared tags</span>
+        </div>
+
+        <div class="graph-search">
+          <input type="text" id="graph-search" placeholder="Search patterns..." />
+          <button id="clear-search" aria-label="Clear search" hidden>×</button>
+        </div>
+
+        <div class="graph-canvas" id="graph-canvas">
+          <svg width="100%" height="800" viewBox="0 0 2000 1600" class="graph-svg">
+            <defs>
+              <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"></feGaussianBlur>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"></feMergeNode>
+                  <feMergeNode in="SourceGraphic"></feMergeNode>
+                </feMerge>
+              </filter>
+            </defs>
+
+            <g id="graph-viewport">
+              <g id="graph-edges"></g>
+              <!-- Nodes -->
+              {
+                positionedNodes.map((node: GraphNode & { x: number; y: number }) => {
+                  const categoryColor = getCategoryColor(node.category);
+
+                  return (
+                    <g
+                      class="graph-node"
+                      data-node-id={node.id}
+                      data-category={node.category}
+                      data-status={node.status}
+                      data-tags={(node.tags || []).join('|')}
+                      data-maturity={node.maturity || ''}
+                      data-domains={(node.domains || []).join('|')}
+                      data-related={(node.related || []).join('|')}
+                      data-anti={(node.anti_patterns || []).join('|')}
+                      data-summary={node.summary || ''}
+                      data-title={node.title}
+                      data-slug={node.slug}
+                      data-x={node.x}
+                      data-y={node.y}
+                      transform={`translate(${node.x} ${node.y})`}
+                      style="--category-color: {categoryColor}"
+                    >
+                      <circle
+                        cx="0"
+                        cy="0"
+                        r="24"
+                        fill={categoryColor}
+                        class="node-circle"
+                        data-node-circle={node.id}
+                      />
+                      <text x="0" y="35" text-anchor="middle" class="node-label">
+                        {node.title.length > 30 ? node.title.slice(0, 30) + '...' : node.title}
+                      </text>
+                      <foreignObject
+                        x="-100"
+                        y="-120"
+                        width="200"
+                        height="120"
+                        class="node-tooltip"
+                      >
+                        <div xmlns="http://www.w3.org/1999/xhtml">
+                          <strong>{node.title}</strong>
+                          <span class="tooltip-category">{node.category}</span>
+                          <span class="tooltip-status">{node.status}</span>
+                          {node.summary && <span class="tooltip-summary">{node.summary}</span>}
+                        </div>
+                      </foreignObject>
+                      <a href={`/graph?node=${node.id}`} class="node-link" data-node-id={node.id}>
+                        <circle cx="0" cy="0" r="32" fill="transparent" />
+                      </a>
+                    </g>
+                  );
+                })
+              }
+            </g>
+          </svg>
+
+          <!-- Zoom Controls -->
+          <div class="graph-controls">
+            <button class="control-btn" id="zoom-in" aria-label="Zoom in">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M12 5v14M5 12h14"></path>
+              </svg>
+            </button>
+            <button class="control-btn" id="zoom-out" aria-label="Zoom out">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M5 12h14"></path>
+              </svg>
+            </button>
+            <button class="control-btn" id="reset-view" aria-label="Reset view">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
+              </svg>
+            </button>
+            <button class="control-btn" id="fit-view" aria-label="Fit to screen">
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Detail Panel -->
+        <div class="graph-detail-panel" id="graph-detail" hidden>
+          <button class="detail-close" id="detail-close">×</button>
+
+          <h2 class="detail-title" id="detail-title"></h2>
+
+          <div class="detail-meta">
+            <span class="detail-category" id="detail-category"></span>
+            <span class="detail-status" id="detail-status"></span>
+          </div>
+
+          <p class="detail-summary" id="detail-summary"></p>
+
+          <div class="detail-badges" id="detail-badges"></div>
+
+          <a href="/patterns" class="detail-link" id="detail-link">View Full Pattern →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  import {
+    drag,
+    forceCenter,
+    forceCollide,
+    forceLink,
+    forceManyBody,
+    forceSimulation,
+    select,
+    zoom,
+    zoomIdentity,
+  } from 'd3';
+
+  const params = new URLSearchParams(window.location.search);
+  const selectedCategories = params.getAll('category');
+  const selectedStatuses = params.getAll('status');
+  const selectedTags = params.getAll('tag');
+  const selectedMaturities = params.getAll('maturity');
+  const selectedDomains = params.getAll('domain');
+  const selectedNodeId = params.get('node');
+  const modeParam = params.get('mode');
+  const modeOptions = new Set(['tag', 'category', 'related', 'similarity']);
+  let activeMode = modeOptions.has(modeParam) ? modeParam : 'tag';
+
+  const clearFiltersLink = document.getElementById('graph-clear-filters');
+  const countEl = document.getElementById('graph-count');
+  const edgeCountEl = document.getElementById('graph-edge-count');
+  const modeLabelEl = document.getElementById('graph-mode-label');
+  const nodeElements = document.querySelectorAll('.graph-node');
+  const modeInputs = document.querySelectorAll('input[data-mode]');
+  const edgesLayer = document.getElementById('graph-edges');
+  let edgeElements = [];
+  const categoryFilters = document.querySelectorAll('input[data-filter="category"]');
+  const statusFilters = document.querySelectorAll('input[data-filter="status"]');
+  const tagFilters = document.querySelectorAll('input[data-filter="tag"]');
+  const maturityFilters = document.querySelectorAll('input[data-filter="maturity"]');
+  const domainFilters = document.querySelectorAll('input[data-filter="domain"]');
+
+  const detailPanel = document.getElementById('graph-detail');
+  const detailTitle = document.getElementById('detail-title');
+  const detailCategory = document.getElementById('detail-category');
+  const detailStatus = document.getElementById('detail-status');
+  const detailSummary = document.getElementById('detail-summary');
+  const detailBadges = document.getElementById('detail-badges');
+  const detailLink = document.getElementById('detail-link');
+  const detailClose = document.getElementById('detail-close');
+
+  const svg = document.querySelector('.graph-svg');
+  const viewport = document.getElementById('graph-viewport');
+  const svgSelection = svg ? select(svg) : null;
+
+  const parseList = (value) => (value ? value.split('|').filter(Boolean) : []);
+  const nodes = Array.from(nodeElements)
+    .map((node) => ({
+      id: node.getAttribute('data-node-id') || '',
+      title: node.getAttribute('data-title') || '',
+      category: node.getAttribute('data-category') || '',
+      tags: parseList(node.getAttribute('data-tags')),
+      related: parseList(node.getAttribute('data-related')),
+      antiPatterns: parseList(node.getAttribute('data-anti')),
+      summary: node.getAttribute('data-summary') || '',
+      x: Number(node.getAttribute('data-x')) || 400,
+      y: Number(node.getAttribute('data-y')) || 300,
+    }))
+    .filter((node) => node.id);
+
+  const nodeById = new Map(nodes.map((node) => [node.id, node]));
+
+  const modeLabels = {
+    tag: 'Shared tags',
+    category: 'Shared category',
+    related: 'Explicit links',
+    similarity: 'Semantic similarity',
+  };
+
+  const edgeKey = (edge) => {
+    const source = typeof edge.source === 'string' ? edge.source : edge.source?.id;
+    const target = typeof edge.target === 'string' ? edge.target : edge.target?.id;
+    return `${source}|${target}|${edge.type || 'link'}`;
+  };
+
+  const edgesCache = new Map();
+
+  const addEdge = (edges, edgeKeys, source, target, type) => {
+    if (!nodeById.has(source) || !nodeById.has(target) || source === target) return;
+    const [left, right] = source < target ? [source, target] : [target, source];
+    const key = `${left}|${right}|${type}`;
+    if (edgeKeys.has(key)) return;
+    edgeKeys.add(key);
+    edges.push({ source, target, type });
+  };
+
+  const buildRelatedEdges = () => {
+    const edges = [];
+    const edgeKeys = new Set();
+    nodes.forEach((node) => {
+      node.related.forEach((target) => addEdge(edges, edgeKeys, node.id, target, 'related'));
+      node.antiPatterns.forEach((target) =>
+        addEdge(edges, edgeKeys, node.id, target, 'anti-pattern')
+      );
+    });
+    return edges;
+  };
+
+  const buildCategoryEdges = () => {
+    const edges = [];
+    const edgeKeys = new Set();
+    const categoryMap = new Map();
+    nodes.forEach((node) => {
+      if (!categoryMap.has(node.category)) {
+        categoryMap.set(node.category, []);
+      }
+      categoryMap.get(node.category).push(node);
+    });
+
+    categoryMap.forEach((list) => {
+      if (list.length < 2) return;
+      const hub = list[0];
+      list.slice(1).forEach((node) => addEdge(edges, edgeKeys, hub.id, node.id, 'category'));
+    });
+
+    return edges;
+  };
+
+  const buildTagEdges = () => {
+    const edges = [];
+    const edgeKeys = new Set();
+    const tagMap = new Map();
+    nodes.forEach((node) => {
+      node.tags.forEach((tag) => {
+        if (!tagMap.has(tag)) {
+          tagMap.set(tag, []);
+        }
+        tagMap.get(tag).push(node);
+      });
+    });
+
+    tagMap.forEach((list) => {
+      if (list.length < 2) return;
+      const hub = list[0];
+      list.slice(1).forEach((node) => addEdge(edges, edgeKeys, hub.id, node.id, 'tag'));
+    });
+
+    return edges;
+  };
+
+  const stopwords = new Set([
+    'the',
+    'and',
+    'for',
+    'with',
+    'that',
+    'this',
+    'from',
+    'into',
+    'using',
+    'your',
+    'their',
+    'over',
+    'under',
+    'between',
+    'when',
+    'then',
+    'than',
+    'its',
+    'are',
+    'was',
+    'were',
+    'but',
+    'not',
+    'all',
+    'any',
+    'can',
+    'may',
+    'helps',
+    'help',
+    'each',
+    'more',
+  ]);
+
+  const tokenize = (text) =>
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter((token) => token.length > 2 && !stopwords.has(token));
+
+  const buildSimilarityEdges = () => {
+    const edges = [];
+    const edgeKeys = new Set();
+    const tokenSets = nodes.map((node) => {
+      const tokens = tokenize(`${node.title} ${node.summary} ${node.tags.join(' ')}`);
+      return new Set(tokens);
+    });
+
+    const similarity = (setA, setB) => {
+      if (setA.size === 0 || setB.size === 0) return 0;
+      let intersection = 0;
+      setA.forEach((token) => {
+        if (setB.has(token)) intersection += 1;
+      });
+      const union = setA.size + setB.size - intersection;
+      return union === 0 ? 0 : intersection / union;
+    };
+
+    nodes.forEach((node, index) => {
+      const scores = [];
+      for (let j = 0; j < nodes.length; j += 1) {
+        if (j === index) continue;
+        const score = similarity(tokenSets[index], tokenSets[j]);
+        if (score > 0.12) {
+          scores.push({ id: nodes[j].id, score });
+        }
+      }
+      scores.sort((a, b) => b.score - a.score);
+      scores.slice(0, 3).forEach((match) => {
+        addEdge(edges, edgeKeys, node.id, match.id, 'similarity');
+      });
+    });
+
+    return edges;
+  };
+
+  const buildEdges = (mode) => {
+    if (edgesCache.has(mode)) return edgesCache.get(mode);
+    let edges = [];
+    if (mode === 'category') {
+      edges = buildCategoryEdges();
+    } else if (mode === 'related') {
+      edges = buildRelatedEdges();
+    } else if (mode === 'similarity') {
+      edges = buildSimilarityEdges();
+    } else {
+      edges = buildTagEdges();
+    }
+    edgesCache.set(mode, edges);
+    return edges;
+  };
+
+  const nodeSelection = svgSelection ? svgSelection.selectAll('.graph-node').data(nodes) : null;
+  let edgeSelection = svgSelection ? svgSelection.selectAll('[data-edge]') : null;
+  const getNodeId = (value) => (typeof value === 'string' ? value : value?.id);
+
+  const renderEdges = (edges) => {
+    if (!edgesLayer || !svgSelection) return;
+
+    edgeSelection = select(edgesLayer)
+      .selectAll('line')
+      .data(edges, (edge) => edgeKey(edge));
+
+    edgeSelection.exit().remove();
+
+    edgeSelection = edgeSelection
+      .enter()
+      .append('line')
+      .attr('class', 'graph-edge')
+      .attr('data-edge', '')
+      .attr('stroke', (d) => {
+        const colors = {
+          related: 'var(--color-primary)',
+          'anti-pattern': 'var(--color-error)',
+          category: '#94a3b8',
+          tag: '#94a3b8',
+          similarity: '#94a3b8',
+        };
+        return colors[d.type] || '#64748b';
+      })
+      .attr('stroke-width', '1.5')
+      .merge(edgeSelection);
+
+    edgeSelection
+      .attr('data-source', (edge) => getNodeId(edge.source))
+      .attr('data-target', (edge) => getNodeId(edge.target))
+      .attr('data-edge-type', (edge) => edge.type || '')
+      .attr('x1', (d) => {
+        const sourceId = getNodeId(d.source);
+        const source = nodeById.get(sourceId);
+        return source?.x || 0;
+      })
+      .attr('y1', (d) => {
+        const sourceId = getNodeId(d.source);
+        const source = nodeById.get(sourceId);
+        return source?.y || 0;
+      })
+      .attr('x2', (d) => {
+        const targetId = getNodeId(d.target);
+        const target = nodeById.get(targetId);
+        return target?.x || 0;
+      })
+      .attr('y2', (d) => {
+        const targetId = getNodeId(d.target);
+        const target = nodeById.get(targetId);
+        return target?.y || 0;
+      });
+
+    edgeElements = edgesLayer.querySelectorAll('[data-edge]');
+
+    if (edgeCountEl) {
+      edgeCountEl.textContent = String(edges.length);
+    }
+
+    if (modeLabelEl) {
+      modeLabelEl.textContent = modeLabels[activeMode] || modeLabels.tag;
+    }
+  };
+
+  let currentEdges = buildEdges(activeMode);
+  renderEdges(currentEdges);
+
+  let simulation;
+  let linkForce;
+  let zoomBehavior;
+
+  if (svgSelection && viewport && nodes.length > 0) {
+    const viewBox = svg?.viewBox?.baseVal;
+    const width = viewBox?.width || 2000;
+    const height = viewBox?.height || 1600;
+
+    linkForce = forceLink(currentEdges)
+      .id((d) => d.id)
+      .distance(140)
+      .strength(0.25);
+
+    simulation = forceSimulation(nodes)
+      .force('link', linkForce)
+      .force('charge', forceManyBody().strength(-240))
+      .force('center', forceCenter(width / 2, height / 2))
+      .force('collision', forceCollide(42))
+      .on('tick', () => {
+        edgeSelection
+          ?.attr('x1', (d) => d.source.x)
+          ?.attr('y1', (d) => d.source.y)
+          ?.attr('x2', (d) => d.target.x)
+          ?.attr('y2', (d) => d.target.y);
+
+        nodeSelection?.attr('transform', (d) => `translate(${d.x} ${d.y})`);
+      });
+
+    let dragMoved = false;
+    const dragBehavior = drag()
+      .on('start', (event, d) => {
+        dragMoved = false;
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      })
+      .on('drag', (event, d) => {
+        dragMoved = true;
+        d.fx = event.x;
+        d.fy = event.y;
+      })
+      .on('end', (event, d) => {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      });
+
+    if (nodeSelection) {
+      nodeSelection.call(dragBehavior).on('click', (event) => {
+        if (!dragMoved) return;
+        event.preventDefault();
+        event.stopPropagation();
+        dragMoved = false;
+      });
+
+      // Bring hovered node to front for tooltip visibility
+      nodeSelection.on('mouseenter', function (_event, _d) {
+        const viewport = document.getElementById('graph-viewport');
+        if (viewport && this.parentNode === viewport) {
+          viewport.appendChild(this);
+        }
+      });
+    }
+
+    zoomBehavior = zoom()
+      .scaleExtent([0.1, 3])
+      .on('zoom', (event) => {
+        viewport.setAttribute('transform', event.transform.toString());
+      });
+
+    svgSelection.call(zoomBehavior);
+
+    // Zoom controls
+    const zoomInBtn = document.getElementById('zoom-in');
+    const zoomOutBtn = document.getElementById('zoom-out');
+    const resetBtn = document.getElementById('reset-view');
+    const fitBtn = document.getElementById('fit-view');
+
+    if (zoomInBtn) {
+      zoomInBtn.addEventListener('click', () => {
+        svgSelection.transition().duration(300).call(zoomBehavior.scaleBy, 1.3);
+      });
+    }
+
+    if (zoomOutBtn) {
+      zoomOutBtn.addEventListener('click', () => {
+        svgSelection.transition().duration(300).call(zoomBehavior.scaleBy, 0.7);
+      });
+    }
+
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        svgSelection.transition().duration(500).call(zoomBehavior.transform, zoomIdentity);
+      });
+    }
+
+    if (fitBtn) {
+      fitBtn.addEventListener('click', () => {
+        // Use live D3 simulation data, not DOM attributes
+        if (!nodes || nodes.length === 0) return;
+
+        // Get IDs of visible nodes (from filter state)
+        const visibleNodeIds = new Set();
+        nodeElements.forEach((node) => {
+          if (node.style.display !== 'none') {
+            const id = node.getAttribute('data-node-id');
+            if (id) visibleNodeIds.add(id);
+          }
+        });
+
+        if (visibleNodeIds.size === 0) return;
+
+        // Calculate bounds from live simulation data
+        let minX = Infinity,
+          minY = Infinity,
+          maxX = -Infinity,
+          maxY = -Infinity;
+
+        nodes.forEach((node) => {
+          if (visibleNodeIds.has(node.id)) {
+            minX = Math.min(minX, node.x);
+            minY = Math.min(minY, node.y);
+            maxX = Math.max(maxX, node.x);
+            maxY = Math.max(maxY, node.y);
+          }
+        });
+
+        // Add padding
+        const padding = 50;
+        minX -= padding;
+        minY -= padding;
+        maxX += padding;
+        maxY += padding;
+
+        const nodeWidth = maxX - minX;
+        const nodeHeight = maxY - minY;
+        const viewBox = svg?.viewBox?.baseVal;
+        const svgWidth = viewBox?.width || 2000;
+        const svgHeight = viewBox?.height || 1600;
+
+        // Calculate scale to fit
+        const scale = Math.min(
+          (svgWidth - padding * 2) / nodeWidth,
+          (svgHeight - padding * 2) / nodeHeight,
+          3 // Max scale
+        );
+
+        // Calculate center
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+
+        // Translate to center and scale
+        const tx = svgWidth / 2 - centerX * scale;
+        const ty = svgHeight / 2 - centerY * scale;
+
+        svgSelection
+          .transition()
+          .duration(500)
+          .call(zoomBehavior.transform, zoomIdentity.translate(tx, ty).scale(scale));
+      });
+    }
+  }
+
+  const applyFilters = () => {
+    const visibleNodes = new Set();
+    nodeElements.forEach((node) => {
+      const category = node.getAttribute('data-category') || '';
+      const status = node.getAttribute('data-status') || '';
+      const tags = (node.getAttribute('data-tags') || '').split('|').filter(Boolean);
+      const maturity = node.getAttribute('data-maturity') || '';
+      const domains = (node.getAttribute('data-domains') || '').split('|').filter(Boolean);
+
+      let matches = true;
+      if (selectedCategories.length > 0 && !selectedCategories.includes(category)) {
+        matches = false;
+      }
+      if (selectedStatuses.length > 0 && !selectedStatuses.includes(status)) {
+        matches = false;
+      }
+      if (selectedTags.length > 0 && !tags.some((tag) => selectedTags.includes(tag))) {
+        matches = false;
+      }
+      if (selectedMaturities.length > 0 && !selectedMaturities.includes(maturity)) {
+        matches = false;
+      }
+      if (
+        selectedDomains.length > 0 &&
+        !domains.some((domain) => selectedDomains.includes(domain))
+      ) {
+        matches = false;
+      }
+
+      node.style.display = matches ? '' : 'none';
+      if (matches) {
+        const nodeId = node.getAttribute('data-node-id');
+        if (nodeId) visibleNodes.add(nodeId);
+      }
+    });
+
+    edgeElements.forEach((edge) => {
+      const source = edge.getAttribute('data-source');
+      const target = edge.getAttribute('data-target');
+      const show = source && target && visibleNodes.has(source) && visibleNodes.has(target);
+      edge.style.display = show ? '' : 'none';
+    });
+
+    if (countEl) {
+      countEl.textContent = String(visibleNodes.size);
+    }
+
+    if (clearFiltersLink) {
+      clearFiltersLink.hidden =
+        selectedCategories.length === 0 &&
+        selectedStatuses.length === 0 &&
+        selectedTags.length === 0 &&
+        selectedMaturities.length === 0 &&
+        selectedDomains.length === 0;
+    }
+  };
+
+  const updateEdgesForMode = (mode) => {
+    activeMode = modeOptions.has(mode) ? mode : 'tag';
+    currentEdges = buildEdges(activeMode);
+    renderEdges(currentEdges);
+
+    if (linkForce && simulation) {
+      linkForce.links(currentEdges);
+      simulation.alpha(0.6).restart();
+    }
+
+    applyFilters();
+  };
+
+  const bindFilterGroup = (inputs, paramName, selectedValues) => {
+    inputs.forEach((input) => {
+      input.checked = selectedValues.includes(input.value);
+      input.addEventListener('change', () => {
+        const params = new URLSearchParams(window.location.search);
+        const values = params.getAll(paramName);
+        if (input.checked) {
+          values.push(input.value);
+        } else {
+          const index = values.indexOf(input.value);
+          if (index !== -1) values.splice(index, 1);
+        }
+        params.delete(paramName);
+        values.forEach((value) => params.append(paramName, value));
+        window.location.search = params.toString();
+      });
+    });
+  };
+
+  const bindModeInputs = () => {
+    modeInputs.forEach((input) => {
+      input.checked = input.value === activeMode;
+      input.addEventListener('change', () => {
+        const nextMode = input.value;
+        const params = new URLSearchParams(window.location.search);
+        if (nextMode === 'tag') {
+          params.delete('mode');
+        } else {
+          params.set('mode', nextMode);
+        }
+        const query = params.toString();
+        const nextUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+        window.history.replaceState({}, '', nextUrl);
+        updateEdgesForMode(nextMode);
+      });
+    });
+  };
+
+  const updateFilterInputs = () => {
+    bindFilterGroup(categoryFilters, 'category', selectedCategories);
+    bindFilterGroup(statusFilters, 'status', selectedStatuses);
+    bindFilterGroup(tagFilters, 'tag', selectedTags);
+    bindFilterGroup(maturityFilters, 'maturity', selectedMaturities);
+    bindFilterGroup(domainFilters, 'domain', selectedDomains);
+    bindModeInputs();
+  };
+
+  const updateDetailPanel = () => {
+    if (!detailPanel) return;
+
+    document.querySelectorAll('[data-node-circle]').forEach((circle) => {
+      circle.removeAttribute('filter');
+    });
+
+    if (!selectedNodeId) {
+      detailPanel.hidden = true;
+      return;
+    }
+
+    const node = document.querySelector(`.graph-node[data-node-id="${selectedNodeId}"]`);
+    if (!node) {
+      detailPanel.hidden = true;
+      return;
+    }
+
+    if (node.style.display === 'none') {
+      detailPanel.hidden = true;
+      return;
+    }
+
+    const title = node.getAttribute('data-title') || '';
+    const category = node.getAttribute('data-category') || '';
+    const status = node.getAttribute('data-status') || '';
+    const slug = node.getAttribute('data-slug') || '';
+    const summary = node.getAttribute('data-summary') || '';
+    const maturity = node.getAttribute('data-maturity') || '';
+    const tags = (node.getAttribute('data-tags') || '').split('|').filter(Boolean);
+    const domains = (node.getAttribute('data-domains') || '').split('|').filter(Boolean);
+
+    if (detailTitle) detailTitle.textContent = title;
+    if (detailCategory) detailCategory.textContent = category;
+    if (detailStatus) detailStatus.textContent = status;
+    if (detailLink && slug) detailLink.setAttribute('href', `/patterns/${slug}`);
+    if (detailSummary) {
+      detailSummary.textContent = summary;
+      detailSummary.hidden = summary.length === 0;
+    }
+
+    if (detailBadges) {
+      detailBadges.innerHTML = '';
+      const badgeItems: Array<{ label: string; type: string }> = [];
+      if (maturity) {
+        badgeItems.push({ label: maturity, type: 'maturity' });
+      }
+      tags.forEach((tag) => badgeItems.push({ label: tag, type: 'tag' }));
+      domains.forEach((domain) => badgeItems.push({ label: domain, type: 'domain' }));
+
+      badgeItems.forEach((badge) => {
+        const span = document.createElement('span');
+        span.className = `detail-badge detail-badge--${badge.type}`;
+        span.textContent = badge.label;
+        detailBadges.appendChild(span);
+      });
+
+      detailBadges.hidden = badgeItems.length === 0;
+    }
+
+    if (detailStatus) {
+      detailStatus.style.setProperty('--status-color', getStatusColor(status));
+    }
+
+    const nodeCircle = document.querySelector(`[data-node-circle="${selectedNodeId}"]`);
+    if (nodeCircle) {
+      nodeCircle.setAttribute('filter', 'url(#glow)');
+    }
+
+    detailPanel.hidden = false;
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      proposed: '#9ca3af',
+      emerging: '#60a5fa',
+      established: '#34d399',
+      'validated-in-production': '#10b981',
+      'best-practice': '#059669',
+      'experimental-but-awesome': '#f59e0b',
+      'rapidly-improving': '#8b5cf6',
+    };
+    return colors[status] || '#6b7280';
+  };
+
+  if (detailClose) {
+    detailClose.addEventListener('click', () => {
+      window.location.href = '/graph';
+    });
+  }
+
+  // Search functionality
+  const searchInput = document.getElementById('graph-search');
+  const clearSearchBtn = document.getElementById('clear-search');
+
+  if (searchInput && clearSearchBtn) {
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase().trim();
+      clearSearchBtn.hidden = query.length === 0;
+
+      nodeElements.forEach((node) => {
+        const title = node.getAttribute('data-title')?.toLowerCase() || '';
+        const summary = node.getAttribute('data-summary')?.toLowerCase() || '';
+        const tags = (node.getAttribute('data-tags') || '').toLowerCase();
+
+        if (query === '') {
+          // Reset to show all (respecting filters)
+          node.style.opacity = '';
+        } else if (title.includes(query) || summary.includes(query) || tags.includes(query)) {
+          node.style.opacity = '1';
+        } else {
+          node.style.opacity = '0.15';
+        }
+      });
+
+      // Update edge visibility based on connected nodes
+      edgeElements.forEach((edge) => {
+        const source = edge.getAttribute('data-source');
+        const target = edge.getAttribute('data-target');
+        const sourceNode = source
+          ? document.querySelector(`.graph-node[data-node-id="${source}"]`)
+          : null;
+        const targetNode = target
+          ? document.querySelector(`.graph-node[data-node-id="${target}"]`)
+          : null;
+
+        const sourceOpacity = sourceNode ? parseFloat(sourceNode.style.opacity || '1') : 1;
+        const targetOpacity = targetNode ? parseFloat(targetNode.style.opacity || '1') : 1;
+
+        // Show edge only if both connected nodes are visible
+        edge.style.opacity =
+          query === '' ? '' : (Math.min(sourceOpacity, targetOpacity) * 0.6).toString();
+      });
+    });
+
+    clearSearchBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      searchInput.dispatchEvent(new Event('input'));
+      searchInput.focus();
+    });
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    // Ignore if typing in search input
+    if (e.target.tagName === 'INPUT') return;
+
+    switch (e.key) {
+      case '+':
+      case '=':
+        e.preventDefault();
+        if (svgSelection && zoomBehavior) {
+          svgSelection.transition().duration(300).call(zoomBehavior.scaleBy, 1.3);
+        }
+        break;
+      case '-':
+      case '_':
+        e.preventDefault();
+        if (svgSelection && zoomBehavior) {
+          svgSelection.transition().duration(300).call(zoomBehavior.scaleBy, 0.7);
+        }
+        break;
+      case '0':
+      case 'Home':
+        e.preventDefault();
+        if (svgSelection && zoomBehavior) {
+          svgSelection.transition().duration(500).call(zoomBehavior.transform, zoomIdentity);
+        }
+        break;
+      case 'f':
+      case 'F':
+        if (!e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          const fitBtn = document.getElementById('fit-view');
+          if (fitBtn) fitBtn.click();
+        }
+        break;
+      case 'Escape': {
+        e.preventDefault();
+        // Close detail panel or fit view
+        const detailPanel = document.getElementById('graph-detail');
+        if (detailPanel && !detailPanel.hidden) {
+          window.location.href = '/graph';
+        } else {
+          const fitBtn = document.getElementById('fit-view');
+          if (fitBtn) fitBtn.click();
+        }
+        break;
+      }
+    }
+  });
+
+  // Click outside to close detail panel
+  if (svg) {
+    svg.addEventListener('click', (e) => {
+      // Only close if clicking on the svg background itself
+      if (e.target === svg || e.target.id === 'graph-viewport' || e.target.id === 'graph-canvas') {
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('node')) {
+          window.location.href = '/graph';
+        }
+      }
+    });
+  }
+
+  updateFilterInputs();
+  applyFilters();
+  updateDetailPanel();
+</script>
+
+<style>
+  .graph-page {
+    max-width: var(--page-max);
+    margin: 0 auto;
+    padding: var(--spacing-xl) var(--spacing-lg) var(--spacing-3xl);
+  }
+
+  .graph-hero {
+    padding: 1.75rem 0 1.25rem;
+  }
+
+  .graph-hero-copy h1 {
+    margin-top: 0.4rem;
+    font-size: 1.75rem;
+  }
+
+  .graph-subtitle {
+    margin-top: var(--spacing-lg);
+    max-width: 44rem;
+    color: var(--color-text-muted);
+    font-size: 1.08rem;
+    line-height: 1.75;
+  }
+
+  .graph-layout {
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    gap: clamp(1rem, 3vw, 2rem);
+  }
+
+  .graph-filters {
+    position: sticky;
+    top: 88px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding: 1.1rem;
+  }
+
+  .filter-section {
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .filter-section:last-child {
+    margin-bottom: 0;
+  }
+
+  .filter-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted-strong);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .filter-options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .filter-hint {
+    margin-top: var(--spacing-sm);
+    font-size: 0.75rem;
+    color: var(--text-muted-strong);
+    line-height: 1.4;
+  }
+
+  .filter-option {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    padding: 0.55rem 0.6rem;
+    border-radius: var(--radius-md);
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease;
+    border: 1px solid transparent;
+  }
+
+  .filter-option:hover {
+    background-color: var(--surface-card);
+    border-color: var(--surface-border-strong);
+  }
+
+  .filter-option input[type='checkbox'],
+  .filter-option input[type='radio'] {
+    cursor: pointer;
+    accent-color: var(--color-primary);
+  }
+
+  .filter-option span:first-of-type {
+    flex: 1;
+    font-size: 0.875rem;
+    color: var(--color-text);
+  }
+
+  .filter-count {
+    font-size: 0.72rem;
+    color: var(--text-muted-strong);
+    background-color: var(--color-bg-soft);
+    padding: 2px 6px;
+    border-radius: 999px;
+    font-weight: 700;
+  }
+
+  .clear-filters {
+    display: block;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    text-align: center;
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+    border-radius: 999px;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .clear-filters:hover {
+    background-color: var(--color-primary-hover);
+  }
+
+  .graph-canvas-container {
+    position: relative;
+    min-width: 0;
+  }
+
+  .graph-info {
+    margin-bottom: var(--spacing-md);
+    padding: 0.95rem 1.1rem;
+    font-size: 0.875rem;
+    color: var(--text-muted-strong);
+  }
+
+  .graph-svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .graph-svg:active {
+    cursor: grabbing;
+  }
+
+  .graph-search {
+    margin-bottom: var(--spacing-md);
+    position: relative;
+  }
+
+  .graph-search input {
+    width: 100%;
+    padding: 0.95rem 1rem;
+    padding-right: 36px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    font-size: 0.875rem;
+    background-color: var(--surface-card);
+    color: var(--color-text);
+  }
+
+  .graph-search input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+  }
+
+  .graph-search input::placeholder {
+    color: var(--text-muted-strong);
+  }
+
+  .graph-search button {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: var(--text-muted-strong);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .graph-search button:hover {
+    color: var(--color-text);
+  }
+
+  .graph-canvas {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: #111315;
+    overflow: hidden;
+    position: relative;
+    box-shadow: var(--shadow-md);
+  }
+
+  .graph-controls {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    display: flex;
+    flex-direction: row;
+    gap: 8px;
+    z-index: 50;
+  }
+
+  .control-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background-color: rgba(14, 15, 17, 0.9);
+    border: 1px solid var(--color-border);
+    color: #e8e9eb;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+    transition:
+      background-color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .control-btn:hover {
+    background-color: var(--color-primary);
+    transform: scale(1.05);
+  }
+
+  .control-btn:active {
+    transform: scale(0.95);
+  }
+
+  .graph-edge {
+    stroke-width: 1.5;
+    opacity: 0.6;
+  }
+
+  .graph-edge[data-edge-type='related'] {
+    opacity: 0.5;
+  }
+
+  .graph-edge[data-edge-type='anti-pattern'] {
+    stroke-dasharray: 4 4;
+    opacity: 0.6;
+  }
+
+  .graph-edge[data-edge-type='category'] {
+    opacity: 0.3;
+  }
+
+  .graph-edge[data-edge-type='tag'] {
+    opacity: 0.4;
+  }
+
+  .graph-edge[data-edge-type='similarity'] {
+    stroke-dasharray: 3 5;
+    opacity: 0.4;
+  }
+
+  .graph-node {
+    cursor: grab;
+  }
+
+  .node-circle {
+    stroke: rgba(232, 233, 235, 0.9);
+    stroke-width: 2;
+    transition: all 0.2s ease;
+  }
+
+  .graph-node:hover .node-circle {
+    stroke-width: 3;
+    filter: drop-shadow(0 0 8px var(--category-color));
+  }
+
+  .node-label {
+    font-size: 12px;
+    fill: rgba(232, 233, 235, 0.88);
+    pointer-events: none;
+  }
+
+  .node-tooltip {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+
+  .graph-node:hover .node-tooltip {
+    opacity: 1;
+  }
+
+  .node-tooltip div {
+    padding: var(--spacing-sm);
+    background-color: var(--surface-pill);
+    border: 1px solid var(--surface-border-strong);
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    color: var(--color-text);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .tooltip-category {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted-strong);
+    margin-top: var(--spacing-xs);
+  }
+
+  .tooltip-status {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--color-primary);
+    margin-top: var(--spacing-xs);
+  }
+
+  .tooltip-summary {
+    display: -webkit-box;
+    font-size: 0.75rem;
+    color: var(--text-muted-strong);
+    margin-top: var(--spacing-xs);
+    line-height: 1.4;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .node-link {
+    cursor: pointer;
+  }
+
+  .graph-detail-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 320px;
+    padding: var(--spacing-lg);
+    background-color: var(--surface-pill);
+    border: 1px solid var(--surface-border-strong);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    z-index: 10;
+  }
+
+  .detail-close {
+    position: absolute;
+    top: var(--spacing-sm);
+    right: var(--spacing-sm);
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    font-size: 1.5rem;
+    color: var(--text-muted-strong);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+  }
+
+  .detail-close:hover {
+    background-color: var(--color-border);
+    color: var(--color-text);
+  }
+
+  .detail-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--color-text);
+    margin-bottom: var(--spacing-md);
+    padding-right: var(--spacing-lg);
+  }
+
+  .detail-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .detail-summary {
+    margin: 0 0 var(--spacing-md);
+    color: var(--text-muted-strong);
+    line-height: 1.6;
+  }
+
+  .detail-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .detail-badge {
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    background-color: var(--color-bg-soft);
+    color: var(--text-muted-strong);
+  }
+
+  .detail-badge--maturity {
+    background-color: var(--color-success);
+    color: var(--color-on-primary);
+  }
+
+  .detail-badge--domain {
+    color: var(--color-text);
+  }
+
+  .detail-category,
+  .detail-status {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .detail-category {
+    background-color: var(--color-bg-soft);
+    color: var(--color-accent-blue);
+  }
+
+  .detail-status {
+    background-color: var(--status-color);
+    color: var(--color-on-primary);
+  }
+
+  .detail-link {
+    display: inline-block;
+    padding: 0.85rem 1.1rem;
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
+    border-radius: 999px;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+  }
+
+  .detail-link:hover {
+    background-color: var(--color-primary-hover);
+  }
+
+  @media (max-width: 1024px) {
+    .graph-hero,
+    .graph-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .graph-filters {
+      position: static;
+      max-height: none;
+    }
+
+    .graph-detail-panel {
+      position: static;
+      width: 100%;
+      margin-top: var(--spacing-lg);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .graph-page {
+      padding: var(--spacing-md) var(--spacing-md) var(--spacing-2xl);
+    }
+
+    .graph-hero-copy h1 {
+      font-size: clamp(2.4rem, 16vw, 4rem);
+    }
+
+    .graph-subtitle {
+      font-size: 1rem;
+    }
+
+    .graph-canvas {
+      min-height: 400px;
+    }
+
+    .node-circle {
+      r: 28 !important;
+    }
+
+    .node-link circle {
+      r: 36 !important;
+    }
+
+    .node-label {
+      font-size: 10px;
+    }
+  }
+</style>

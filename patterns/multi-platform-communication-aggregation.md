@@ -1,11 +1,24 @@
 ---
 title: Multi-Platform Communication Aggregation
 status: emerging
-authors: ["Lucas Carlson"]
-based_on: ["Anthropic (Claude Code)"]
-category: "Tool Use & Environment"
-source: "https://github.com/anthropics/claude-code"
-tags: [search, aggregation, parallel, communication, unified-interface]
+authors:
+  - Lucas Carlson
+based_on:
+  - Anthropic (Claude Code)
+category: Tool Use & Environment
+source: 'https://github.com/anthropics/claude-code'
+tags:
+  - search
+  - aggregation
+  - parallel
+  - communication
+  - unified-interface
+slug: multi-platform-communication-aggregation
+id: multi-platform-communication-aggregation
+summary: "Queries every communication platform in parallel through adapters that share one schema, then merges, deduplicates, and ranks the results"
+signals: ["Users search for messages without knowing which platform holds them", "Each platform has a CLI or API with search support", "Cross-platform audit or compliance searches"]
+anti_signals: ["All communication is on one platform", "Privacy rules do not allow aggregating data across platforms"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem
@@ -14,7 +27,7 @@ Users communicate across multiple platforms (email, Slack, iMessage, etc.) and n
 
 ## Solution
 
-Create a unified search interface that queries all communication platforms in parallel and aggregates results into a single, consistent format.
+Create a unified search interface that queries all communication platforms in parallel and aggregates results into a single, consistent format. Also known academically as **Federated Search** or **Mediator-Based Integration**.
 
 ```mermaid
 graph TD
@@ -54,6 +67,13 @@ search_all() {
     aggregate_results /tmp/*.json
 }
 ```
+
+**Architectural variants:**
+
+- **Adapter Pattern**: Platform abstraction layer with unified API (single codebase, easy platform addition)
+- **Gateway/Bridge Pattern**: Bidirectional message synchronization between platforms
+- **Unified Inbox Pattern**: Customer-centric aggregation for support/engagement workflows
+- **Event-Driven Architecture**: Async message brokering for scalability
 
 ## How to use it
 
@@ -112,3 +132,6 @@ Results presented in unified table, grouped by platform.
 * Sub-Agent Spawning pattern for parallel execution
 * LLM Map-Reduce pattern for result aggregation
 * Claude Code `/search-all` skill implementation
+* **Academic**: Callan, J. (2020). *Federated Search: From Theory to Practice*
+
+- Primary source: https://github.com/anthropics/claude-code

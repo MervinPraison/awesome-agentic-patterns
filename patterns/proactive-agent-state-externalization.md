@@ -1,22 +1,37 @@
 ---
 title: Proactive Agent State Externalization
 status: emerging
-authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Cognition AI (2025)"]
+authors:
+  - Nikola Balic (@nibzard)
+based_on:
+  - Cognition AI (2025)
 category: Context & Memory
-source: "https://cognition.ai/blog/devin-sonnet-4-5-lessons-and-challenges"
-tags: [state-externalization, memory-management, self-documentation, note-taking]
+source: 'https://cognition.ai/blog/devin-sonnet-4-5-lessons-and-challenges'
+tags:
+  - state-externalization
+  - memory-management
+  - self-documentation
+  - note-taking
+slug: proactive-agent-state-externalization
+id: proactive-agent-state-externalization
+summary: "Gives agents note templates, completeness checks, and an external memory fallback so self-written notes keep objectives, decisions, and knowledge gaps"
+signals: ["Agent works on multi-hour or multi-session tasks", "Agent already writes its own summary or changelog files", "Main agent must pass state to subagents"]
+anti_signals: ["Short single-session tasks", "Documentation tokens cost more than the continuity they give"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem
+
 Modern models like Claude Sonnet 4.5 proactively attempt to externalize their state by writing summaries and notes (e.g., `CHANGELOG.md`, `SUMMARY.md`) to the file system without explicit prompting. However:
 
 - Self-generated notes are often incomplete or miss crucial context
 - Models may spend more tokens on documentation than actual problem-solving
 - Performance can degrade when agents rely exclusively on their own summaries
 - Knowledge gaps emerge from inadequate self-documentation
+- Behavior intensifies near context window limits as a coping mechanism
 
 ## Solution
+
 Implement structured approaches to leverage and enhance the model's natural tendency toward state externalization:
 
 **1. Guided Self-Documentation Framework**
@@ -28,6 +43,7 @@ Implement structured approaches to leverage and enhance the model's natural tend
 - Combine agent self-documentation with external memory management
 - Use agent notes as supplementary, not primary, state storage
 - Implement fallback mechanisms when self-generated context is insufficient
+- Account for increased summary token generation with shorter context windows
 
 **3. Progressive State Building**
 - Encourage incremental note-taking throughout long sessions
@@ -80,11 +96,12 @@ class ProactiveStateManager:
 ```
 
 ## How to use it
+
 Best applied in scenarios where agents work on extended tasks:
 
 - **Long-Running Development Sessions**: Multi-hour coding projects requiring state continuity
 - **Research and Analysis**: Complex investigations spanning multiple sessions
-- **Subagent Coordination**: When main agents need to communicate state to spawned subagents
+- **Subagent Coordination**: When main agents need to communicate state to spawned subagents; this behavior may represent a natural pattern for agent-to-agent communication
 
 Monitor self-documentation quality and supplement with external memory systems when agent notes prove insufficient.
 
@@ -94,5 +111,6 @@ Monitor self-documentation quality and supplement with external memory systems w
 * **Cons:** May consume tokens on documentation over progress; requires validation overhead; risk of incomplete self-assessment; potential for "documentation theater"
 
 ## References
+
 * [Cognition AI: Devin & Claude Sonnet 4.5 - Lessons and Challenges](https://cognition.ai/blog/devin-sonnet-4-5-lessons-and-challenges)
 * Related: [Episodic Memory Retrieval & Injection](episodic-memory-retrieval-injection.md)

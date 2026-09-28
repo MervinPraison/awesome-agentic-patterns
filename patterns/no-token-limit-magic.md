@@ -6,15 +6,31 @@ based_on: ["Thorsten Ball", "Quinn Slack"]
 category: Reliability & Eval
 source: "https://www.nibzard.com/ampcode"
 tags: [performance, cost, experimentation]
+summary: "Removes hard token limits during prototyping to learn what good behavior needs, then compresses context only after quality is stable and measured"
+signals: ["Pattern discovery, architecture design, or early benchmark work", "Quality baseline is not known yet", "Token usage and quality scores can be measured from the start"]
+anti_signals: ["Workflow is stable and already in production", "Budget cannot cover higher short-term inference cost"]
+updated_at: "2026-03-11"
 ---
 
 ## Problem
-Aggressive prompt compression to save tokens stifles reasoning depth and self-correction.
+
+Teams often optimize token spend too early, forcing prompts and context windows into tight constraints before they understand what high-quality behavior looks like. Early compression hides failure modes, reduces reasoning depth, and can lock in mediocre workflows that are cheap but unreliable.
 
 ## Solution
-During prototyping, **remove hard token limits**. Allow lavish context and multiple reasoning passes. Yes, it's pricier—but dramatically better outputs surface valuable patterns before optimizing.
+
+During discovery and prototyping, relax hard token limits and optimize for learning velocity. Allow richer context, deeper deliberation, and multiple critique passes to discover what a strong solution path actually requires. After the behavior is stable, measure where context can be compressed without degrading outcomes.
+
+This pattern treats cost optimization as a second phase, not the first objective.
+
+## Evidence
+
+- **Evidence Grade:** `medium`
+- **Multiple critique passes improve output quality** (Wang et al. 2022, Shinn et al. 2023): Self-consistency sampling and self-reflection loops significantly improve reasoning, but require generous token budgets.
+- **Premature optimization creates technical debt** (Sculley et al. 2015): Early optimization decisions in ML systems create long-term maintenance burdens—supports deferring token optimization.
+- **Unverified:** Direct quantitative studies comparing early vs late token optimization timing.
 
 ## Example (token budget approach)
+
 ```mermaid
 flowchart TD
     A[Development Phase] --> B{Token Strategy}
@@ -34,7 +50,23 @@ flowchart TD
     J --> D
 ```
 
+## How to use it
+
+- Use this during pattern discovery, architecture design, and early benchmark creation.
+- Instrument token usage and quality scores from day one so later optimization has data.
+- Set a temporary spend ceiling per experiment while intentionally allowing larger contexts.
+- Transition to cost-tuned prompts only after quality thresholds are repeatable.
+
+## Trade-offs
+
+* **Pros:** Faster insight discovery, better baseline quality, and fewer premature architecture decisions.
+* **Cons:** Higher short-term inference cost and risk of delaying production-grade efficiency work.
+
 ## References
+
 - Raising An Agent - Episode 2 cost discussion—$1000 prototype spend justified by productivity.
+- Wang et al. (2022) "Self-Consistency Improves Chain-of-Thought Reasoning" - arXiv:2203.11171
+- Shinn et al. (2023) "Reflexion: Language Agents with Verbal Reinforcement Learning" - arXiv:2303.11366
+- Sculley et al. (2015) "Technical Debt in Machine Learning Systems" - NeurIPS 2015
 
 [Source](https://www.nibzard.com/ampcode)

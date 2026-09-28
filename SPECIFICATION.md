@@ -1,0 +1,671 @@
+# Modern Docs Redesign and Rearchitecture Specification
+
+Status: In progress
+Owner: TBD
+Last updated: 2026-01-13
+
+## Summary
+This specification defines a modern, LLM-first redesign of the Awesome Agentic Patterns site. The new experience moves from a traditional docs layout to a structured knowledge product with discovery tooling, decision support, machine-readable outputs, and a bold visual identity. The rearchitecture keeps the `patterns/` folder as the source of truth but introduces a structured content model, a data pipeline, and a new static site frontend optimized for search, reuse, and AI ingestion.
+
+## Decisions
+- Specification approved for implementation.
+- Stack selected: Astro + TypeScript.
+- Deployment target: Vercel.
+- Package manager: bun.
+- Workspace layout: monorepo with `apps/web`.
+- Launch milestone: 2026-01-27.
+- MkDocs is removed; only patterns and curated content remain.
+- Dark mode is in v1 scope.
+- Guides will include: `HELP.md`, `LEARNINGS.md`, `PATTERN-LABELING.md`, `MIGRATION-TO-GIT-LABELS.md`.
+- Decision Explorer: rules-based for v1 (ML-assisted deferred to v2).
+- Backup deployment: No. Vercel-only for simplicity. Git history + local build = sufficient recovery.
+- Graph library: D3.js (d3-force) for framework independence and smaller bundle.
+- Content loader: Astro glob() with custom base path (no symlinks).
+- Validation runtime: TypeScript with bun (not Python). Zod for schema validation.
+- Data pipeline runtime: TypeScript with bun (consistent with validation).
+- Data outputs: `apps/web/public/` (Astro serves from here, build artifacts not committed).
+
+## Goals
+- Replace the current MkDocs UX with a modern, fast, discovery-driven site.
+- Make every pattern machine-readable and reusable (MD, JSON, and LLM formats).
+- Add decision support features (compare, decision explorer, graph map).
+- Preserve contributor flow (simple Markdown in `patterns/`).
+- Improve navigation, search, and content reuse for humans and LLMs.
+- Keep deployment static and low-cost (Vercel).
+
+## Non-goals
+- Building an authenticated product or paid experience.
+- Rewriting all existing pattern content in the first release.
+- Replacing the Git-based contribution model with a CMS.
+- Adding runtime backends that require persistent servers.
+- Maintaining the MkDocs build pipeline.
+
+## Target Users
+- Builders: want quick, actionable patterns to ship product features.
+- Researchers: want references, provenance, and cross-links.
+- Operators: want reliability and safety guidance with checklists.
+- Contributors: want a simple way to add or update patterns.
+
+## Product Principles
+- Content-first: patterns drive site structure and navigation.
+- LLM-friendly by default: every page has clean, structured outputs.
+- Fast and frictionless: minimal clicks to find or compare patterns.
+- Opinionated design: distinct visual identity, not a generic docs look.
+- Stable URLs: patterns are canonical and versioned by slug.
+
+## Information Architecture
+Primary navigation:
+- Home (overview, featured, entry points)
+- Patterns (filterable index)
+- Decision Explorer (question-driven recommendations)
+- Compare (side-by-side patterns)
+- Graph (relationship map)
+- Packs (curated bundles)
+- Guides (long-form how-tos)
+- Contribute (how to add patterns)
+
+Routes (v1):
+- / (home)
+- /patterns (index)
+- /patterns/{slug} (pattern page)
+- /compare?ids=a,b,c (comparison view)
+- /decision (decision explorer)
+- /graph (interactive map)
+- /packs (curated bundles)
+- /packs/{slug}
+- /guides
+- /guides/{slug}
+- /llms.txt (LLM entry)
+- /llms-full.txt (full pattern content)
+- /data/patterns.json (structured pattern index)
+- /data/patterns/{slug}.json (single pattern JSON)
+
+## Content Model
+### Pattern front matter schema (proposed)
+Required fields:
+```
+---
+id: "pattern.slug"            # stable, lowercase, dot-separated
+title: "Human-readable title"
+summary: "One-sentence summary"
+status: "proposed | emerging | established | validated-in-production | best-practice | experimental-but-awesome | rapidly-improving"
+authors: ["Name (@handle)"]
+category: "Orchestration & Control | Context & Memory | Feedback Loops | Learning & Adaptation | Reliability & Eval | Security & Safety | Tool Use & Environment | UX & Collaboration"
+tags: [keywords, here]
+source: "https://example.com/reference"
+slug: "pattern-slug"
+---
+```
+
+Optional fields:
+```
+---
+based_on: ["Source or team"]
+maturity: "early | maturing | mature"
+complexity: "low | medium | high"
+effort: "hours | days | weeks"
+impact: "low | medium | high"
+signals: ["When this pattern helps"]
+anti_signals: ["When it is a bad fit"]
+prerequisites: ["Prereq 1", "Prereq 2"]
+related: ["other.pattern.id"]
+anti_patterns: ["anti.pattern.id"]
+tools: ["vector-db", "sandbox", "ci"]
+domains: ["coding", "research", "ops"]
+updated_at: "YYYY-MM-DD"
+---
+```
+
+### Pattern body structure (required sections)
+- Problem
+- Solution
+- How to use it
+- Trade-offs
+- References
+
+Optional sections:
+- When to use
+- When not to use
+- Signals
+- Implementation checklist
+- Variations
+- Pitfalls
+- Benchmarks
+
+### Additional content types
+- Guides: longer multi-pattern workflows.
+- Packs: curated lists of patterns by theme or use case.
+- Glossary: standard definitions for cross-linking.
+
+## Content Retention
+- Keep `patterns/` as the canonical source of truth.
+- Keep repo-level documentation that directly supports contributors and users.
+- Retire MkDocs-specific artifacts and generated outputs after Astro parity.
+
+Initial keep list (adjust after audit):
+- `README.md`
+- `CONTRIBUTING.md`
+- `TEMPLATE.md`
+- `HELP.md`
+- `LEARNINGS.md`
+- `PATTERN-LABELING.md`
+- `MIGRATION-TO-GIT-LABELS.md`
+
+Docs to surface as Guides:
+- `HELP.md`
+- `LEARNINGS.md`
+- `PATTERN-LABELING.md`
+- `MIGRATION-TO-GIT-LABELS.md`
+
+## Feature Requirements
+### Home
+- A strong narrative hero (why this exists, who it is for).
+- Featured patterns and packs.
+- Entry points for Builders, Researchers, Operators.
+- Latest updates and newly added patterns.
+
+### Pattern Index
+- Faceted filters (category, maturity, complexity, tags, domains).
+- Search bar with autocomplete.
+- Pattern cards showing summary, status, and tags.
+
+### Pattern Page
+- Clean, skimmable layout with section nav.
+- Copy as Markdown button (raw page content).
+- Copy as JSON button (structured front matter + normalized sections).
+- Inline related patterns and anti-patterns.
+- Visual metadata pills (status, maturity, complexity).
+
+### Compare
+- Select up to 4 patterns and compare key fields side-by-side.
+- Show summary, signals, anti-signals, complexity, and trade-offs.
+
+### Decision Explorer
+- Question-driven flow that recommends patterns with rationale.
+- Outputs include a quick "why this fits" and "what to avoid."
+- Implementation: Rules-based decision tree for v1 (ML-assisted deferred to v2).
+  - Rationale: Faster development, predictable behavior, easier debugging, clear rationale for recommendations.
+  - Future v2: Could enhance with ML for dynamic recommendations based on usage patterns.
+
+### Graph Explorer
+- Interactive map of patterns and relationships.
+- Filters by category, tag, maturity, and domain.
+- Hover shows summary; click opens detail panel.
+
+### Packs
+- Curated bundles (e.g., "Coding Agent MVP", "Safety First Stack").
+- Each pack includes context and recommended order.
+
+## LLM-first Requirements
+- /llms.txt with a concise index of canonical pattern URLs and metadata.
+- /llms-full.txt with stable, minimal-noise pattern content.
+- /data/patterns.json with structured metadata for ingestion.
+- /data/patterns/{slug}.json for single-pattern retrieval.
+- Provide "citation mode" anchors for pattern sections (stable IDs).
+
+## UX and Visual Design
+Design direction:
+- Editorial, bold, modern, not a template docs look.
+- High-contrast typography and generous spacing.
+- Use a distinctive primary typeface and a serif body typeface.
+- Subtle gradient or textured background, not flat color.
+- Small, purposeful animations (page-load reveal, card hover lift).
+
+Suggested typography (web-safe fallback acceptable):
+- Headings: "Space Grotesk" or "Satoshi"
+- Body: "Source Serif 4" or "Literata"
+- Code: "JetBrains Mono" or "IBM Plex Mono"
+
+Color system (example palette):
+- Ink: #101214
+- Paper: #f7f4ef
+- Accent: #ff6a00
+- Secondary: #0a7cff
+- Muted: #8c8c8c
+- Success: #12b76a
+- Warning: #f79009
+
+## Technical Architecture
+### Stack (selected)
+- Astro + TypeScript for static rendering.
+- MDX for rich pattern content.
+- Zod schema validation for front matter.
+- Pagefind for search index.
+- D3 or Visx for graph visualization.
+- Deployment: Vercel (static output).
+- Package manager: bun (monorepo).
+
+### Repo layout (selected)
+```
+apps/web/
+  astro.config.mjs
+  package.json
+  src/
+    content/
+      patterns/           # read from root patterns/ (symlink or custom loader)
+      guides/
+      packs/
+    pages/
+      index.astro
+      patterns/[slug].astro
+      compare.astro
+      decision.astro
+      graph.astro
+      packs/[slug].astro
+      guides/[slug].astro
+    components/
+    styles/
+  public/
+    data/
+      patterns.json
+      graph.json
+    llms.txt
+    llms-full.txt
+```
+
+### Build pipeline (proposed)
+1. Parse `patterns/*.md` front matter and body.
+2. Validate schema and required headings.
+3. Generate structured JSON outputs.
+4. Generate `llms.txt` and `llms-full.txt`.
+5. Build static pages and search index.
+
+## Migration Strategy
+- Keep `patterns/` as source of truth.
+- Add missing front matter fields incrementally.
+- Introduce a new build pipeline and retire MkDocs.
+- Ship the new site behind a preview deployment first.
+- Switch the main domain only after parity is reached.
+- Remove MkDocs config, build steps, and generated artifacts after Astro parity.
+
+## Performance Targets
+- LCP < 2.0s on mobile for the home page.
+- 95+ Lighthouse performance and accessibility scores.
+- No client-side blocking scripts on initial load.
+
+## Accessibility
+- WCAG 2.2 AA compliance.
+- Keyboard navigation for all interactive components.
+- Visible focus states and accessible color contrast.
+
+## SEO and Metadata
+- Canonical URLs for all patterns.
+- JSON-LD structured data for patterns.
+- Open Graph tags for social sharing.
+- XML sitemap and RSS/Atom feeds for updates.
+
+## Implementation Task List
+### Phase 0 - Alignment
+1. Review and approve this specification. (done)
+2. Decide on the final stack (Astro vs alternatives). (done - Astro)
+3. Confirm target launch milestone (date or milestone). (done - 2026-01-27)
+
+### Phase 1 - Content Model and Schema
+4. Define the final front matter schema (required and optional fields).
+5. Add schema validation (Zod or Python) for `patterns/`.
+6. Update `patterns/TEMPLATE.md` to include new fields.
+7. Add a migration script to backfill missing fields (summary, slug, id).
+8. Add lint checks for required sections and heading order.
+
+### Phase 2 - Data Pipeline
+9. Create a build script to parse pattern files.
+10. Generate `public/data/patterns.json` (index) from patterns.
+11. Generate `public/data/patterns/{slug}.json` per pattern.
+12. Generate `public/llms.txt` with canonical URLs.
+13. Generate `public/llms-full.txt` with normalized content.
+14. Generate `public/data/graph.json` from relationships.
+15. Add sitemap and RSS feed generation.
+
+### Phase 3 - App Scaffold
+16. Create `apps/web/` and initialize Astro + TypeScript.
+17. Add global styles, typography, and color tokens.
+18. Build a base layout with header, footer, and nav.
+19. Implement a responsive grid and spacing system.
+
+### Phase 4 - Core Pages
+20. Build the Home page with hero, entry points, and featured content.
+21. Build the Patterns index with filters and search.
+22. Build the Pattern page template with section nav.
+23. Add "Copy as Markdown" and "Copy as JSON" buttons.
+24. Build the Compare page with a selection workflow.
+25. Build the Decision Explorer flow (v1 rules-based).
+26. Build the Graph Explorer (v1 with basic filters).
+
+### Phase 5 - Search and Discovery
+27. Integrate Pagefind and generate the search index.
+28. Add tag and category filters with URL sync.
+29. Implement related patterns and anti-pattern sections.
+
+### Phase 6 - LLM Integration
+30. Validate `llms.txt` and `llms-full.txt` formats.
+31. Add a "Copy prompt pack" feature for selected patterns.
+32. Add citation anchors and a copyable citation format.
+
+### Phase 7 - Migration and Parity
+33. Ensure all existing patterns render correctly in the new site.
+34. Port any custom MkDocs styles to the new design system.
+35. Create redirects from old MkDocs URLs to new routes.
+36. Keep README auto-generation intact or replace it.
+
+### Phase 8 - QA and Launch
+37. Run Lighthouse and fix performance issues.
+38. Run accessibility checks and fix violations.
+39. Verify search index, JSON outputs, and LLM files.
+40. Deploy preview build and collect feedback.
+41. Switch production deployment to the new site.
+
+## Decisions Record
+
+### Decision 001: No Backup Deployment Infrastructure
+
+**Date**: 2026-01-13
+
+**Context**: Project migrating from MkDocs + Cloudflare Workers to Astro + Vercel. Question: whether to maintain Cloudflare/GitHub Pages as backup deployment.
+
+**Decision**: No. Use Vercel as sole deployment target.
+
+**Rationale**:
+1. **Operational simplicity**: Single deployment pipeline reduces complexity and error surface
+2. **Vercel reliability**: 99.99% uptime SLA; edge failures are exceptionally rare
+3. **Migration velocity**: Removes "maintain MkDocs fallback" option, forces completion
+4. **DNS switching is slow**: Real failover requires DNS propagation (minutes to hours)
+5. **Git = backup**: Repository history + `bun run build` provides sufficient emergency recovery
+6. **Preview deployments**: Vercel PR previews provide staging for testing
+7. **Cost**: No savings; both platforms have generous free tiers
+
+**Consequences**:
+- Remove `wrangler.toml`, `wrangler` from package.json
+- Update `.github/workflows/deploy.yml` for Vercel deployment
+- Archive DEPLOYMENT.md (MkDocs-specific instructions) after migration
+- Domain DNS points to Vercel only
+
+**Revisit if**: Vercel has sustained outage >1 hour (has never occurred).
+
+### Decision 002: D3.js for Graph Visualization
+
+**Date**: 2026-01-13
+
+**Context**: Graph Explorer feature requires interactive network visualization. Options evaluated: D3.js vs Visx vs Sigma.js vs Cytoscape.js.
+
+**Decision**: Use D3.js (d3-force module).
+
+**Rationale**:
+1. **Framework independence**: Native Astro compatibility, no React runtime overhead
+2. **Bundle size**: ~15-20KB vs ~60KB+ for Visx + React
+3. **Native force simulation**: d3-force designed specifically for force-directed graphs
+4. **Performance**: Smaller JS = easier LCP < 2.0s target, higher Lighthouse scores
+5. **Accessibility patterns**: Documented keyboard nav and ARIA implementation guides
+6. **Astro integration**: Works with `client:load` directive, no framework shim
+
+**Alternatives considered**:
+- **Visx**: React-specific, no force component (issue #429), adds React runtime
+- **Sigma.js**: WebGL-based, handles 10K-100K nodes, overkill for ~50-100 patterns
+- **Cytoscape.js**: ~200KB bundle, more complexity than needed
+
+**Implementation**:
+```bash
+bun add d3-force d3-selection d3-zoom d3-drag
+```
+
+**Consequences**:
+- Manual accessibility implementation required (keyboard nav, ARIA, focus management)
+- Learning curve for D3's imperative API
+- Full control over interactions (hover, click, drag, zoom)
+
+**Revisit if**: Graph scales to >500 nodes or requires WebGL performance.
+
+### Decision 003: Content Loader Approach for Astro
+
+**Date**: 2026-01-13
+
+**Context**: Patterns live at repo root `patterns/`, Astro app in `apps/web/`. Need to load patterns into Astro content collections. Options: symlink `patterns/` into `apps/web/src/content/` vs custom loader reading from repo root.
+
+**Decision**: Use Astro's native `glob()` loader with custom `base` path.
+
+**Implementation**:
+```typescript
+// apps/web/src/content/config.ts
+import { defineCollection, z } from 'astro:content';
+import { glob } from 'astro/loaders';
+
+const patterns = defineCollection({
+  loader: glob({
+    pattern: '**/*.md',
+    base: '../../patterns'  // Reads from repo root
+  }),
+  schema: z.object({
+    title: z.string(),
+    status: z.enum(['proposed', 'emerging', 'established', 'validated-in-production', 'best-practice', 'experimental-but-awesome', 'rapidly-improving']),
+    authors: z.array(z.string()),
+    category: z.string(),
+    tags: z.array(z.string()),
+    // ... other front matter fields
+  })
+});
+
+export const collections = { patterns };
+```
+
+**Rationale**:
+1. **Cross-platform reliability**: Symlinks break on Windows (GitHub #8312, #12866), require `preserveSymlinks: true` workaround
+2. **Git workflow**: Symlinks are Git-tracked files that can fail on Windows clone; custom loader works for all contributors
+3. **HMR support**: Symlinks have file watching issues in monorepos (GitHub #8369); glob() loader has native HMR
+4. **Astro v5 native**: Content Layer API with glob() is the documented solution for external content
+5. **Deployment**: Vercel Linux builds handle glob() correctly; symlinks may have edge cases
+6. **Developer experience**: No special setup, no OS permissions, self-documenting code
+7. **Future flexibility**: Can extend to inline loader for data transformations if needed
+
+**Symlink disadvantages**:
+- Windows compatibility issues (requires Developer Mode/admin)
+- Unknown Content Collection errors (GitHub #9088)
+- Requires Vite `preserveSymlinks: true` configuration
+- Pre-Astro-v5 workaround, not the intended pattern
+
+**Consequences**:
+- Patterns remain at repo root as source of truth
+- Contributors edit patterns in root `patterns/` folder
+- Astro app reads via glob() loader with relative path
+- No filesystem symlinks needed
+- Cross-platform development works immediately
+
+**Revisit if**: Astro content collection API changes significantly or glob() loader proves insufficient.
+
+### Decision 004: Validation Runtime - TypeScript/Bun
+
+**Date**: 2026-01-13
+
+**Context**: Current validation uses Python scripts (`scripts/build_readme.py`, ~600 lines). New stack is Astro + TypeScript + bun. Need validation for front matter schema, required headings, section order, and data pipeline (JSON/llms.txt generation).
+
+**Decision**: Use TypeScript with bun for all validation and data pipeline scripts.
+
+**Rationale**:
+1. **Ecosystem alignment**: Astro Content Collections use Zod natively; Zod already installed
+2. **Single runtime**: Build, validate, generate data all with TypeScript/bun (no Python on Vercel)
+3. **Schema reuse**: Zod schemas define once, use for validation + Astro types + runtime checks
+4. **Performance**: Bun is 20-40x faster than npm, 4× HTTP throughput vs Node, sub-second startup
+5. **Build integration**: Validation runs during Astro build (Content Collections auto-validate)
+6. **Developer experience**: One language, better IDE support, refactoring safety
+7. **Ecosystem**: gray-matter (5M+ downloads), remark, markdownlint vs python-frontmatter (stale)
+
+**Python disadvantages**:
+- Dual language maintenance (Python + TypeScript)
+- Schema synchronization burden (Python validation ≠ Astro Zod schema)
+- Custom YAML parser (only 30 lines) vs Zod's robust validation
+- CI/CD complexity (two runtimes to install/configure)
+
+**Migration strategy**:
+1. Port `build_readme.py` → `validate-patterns.ts` (~2-3 days)
+2. Port `git_pattern_dates.py` → `git-utils.ts` (~1 day)
+3. Create `build-data.ts` for JSON/llms.txt/graph.json generation (~2-3 days)
+4. Remove Python dependencies from CI/CD (~1 day)
+
+**Implementation**:
+```typescript
+// scripts/validate-patterns.ts
+import { z } from 'zod';
+import matter from 'gray-matter';
+
+const PatternSchema = z.object({
+  title: z.string().min(1),
+  status: z.enum(['proposed', 'emerging', 'established', 'validated-in-production', 'best-practice', 'experimental-but-awesome', 'rapidly-improving']),
+  authors: z.array(z.string()).min(1),
+  category: z.string(),
+  tags: z.array(z.string()),
+  // ... other fields
+});
+
+function validatePattern(filePath: string) {
+  const { data, content: body } = matter(readFileSync(filePath, 'utf-8'));
+  return PatternSchema.safeParse(data);
+}
+```
+
+**Consequences**:
+- Remove Python from CI/CD pipeline
+- Single `bun run build` command for validation + build
+- ~600 lines of Python to port to TypeScript
+- Zod schemas become source of truth for validation
+
+**Revisit if**: TypeScript validation proves insufficient or Python offers unique capabilities needed.
+
+### Decision 005: Data Pipeline Runtime - TypeScript/Bun
+
+**Date**: 2026-01-13
+
+**Context**: Data pipeline generates patterns.json, llms.txt, llms-full.txt, graph.json. Validation runtime already decided as TypeScript/Bun (Decision 004). Question: whether data pipeline should match or use different runtime.
+
+**Decision**: Use TypeScript with bun (consistent with validation).
+
+**Rationale**:
+1. **Consistency**: Single runtime across validation + data pipeline + Astro build
+2. **Schema sharing**: Data pipeline uses same Zod schemas as validation and Astro
+3. **No cross-language boundary**: Validation output → data pipeline generation in same process
+4. **Performance**: Bun speed benefits apply to data generation (100+ patterns → sub-second processing)
+5. **Deployment**: Vercel build only needs bun (no Python runtime)
+6. **Maintainability**: One language for entire build pipeline
+7. **Type safety**: TypeScript ensures JSON outputs match expected schema
+
+**Consequences**:
+- Single `bun run build` command runs validation + data generation + Astro build
+- Data pipeline scripts share types/validation logic with rest of codebase
+- No Python dependency for data generation
+
+**Implementation**:
+```typescript
+// scripts/build-data.ts
+import { getCollection } from 'astro:content';
+import { writeFileSync } from 'fs';
+
+export async function buildData() {
+  // Load validated patterns from Astro
+  const patterns = await getCollection('patterns');
+
+  // Generate outputs
+  writeFileSync('./public/data/patterns.json', JSON.stringify(patterns, null, 2));
+  writeFileSync('./public/llms.txt', generateLlmsTxt(patterns));
+  writeFileSync('./public/llms-full.txt', generateLlmsFullTxt(patterns));
+  writeFileSync('./public/data/graph.json', generateGraphJson(patterns));
+}
+```
+
+**Revisit if**: Data pipeline requirements outgrow TypeScript capabilities (unlikely).
+
+### Decision 006: Data Output Location - apps/web/public/
+
+**Date**: 2026-01-13
+
+**Context**: Data pipeline generates patterns.json, llms.txt, llms-full.txt, graph.json. Monorepo structure has `apps/web/` for Astro app. Question: Should outputs live in `apps/web/public/` or repo root `public/`?
+
+**Decision**: Use `apps/web/public/` for all data pipeline outputs.
+
+**Rationale**:
+1. **Astro native**: Framework serves static files from its `public/` directory at root URL
+2. **Spec alignment**: Repo layout (lines 234-258) already defines `apps/web/public/data/` structure
+3. **Single-app monorepo**: No shared location needed; only one app exists
+4. **Build artifacts**: Data files generated during `bun run build`, not committed to Git
+5. **Canonical URLs**: `/llms.txt` and `/data/patterns.json` map correctly from `apps/web/public/`
+6. **No symlinks**: Decision 003 already rejected symlinks; copy steps add complexity
+7. **Vercel compatible**: Build output includes everything needed for deployment
+
+**Repo-root public/ disadvantages**:
+- Requires copy/symlink step from apps/web/public to repo root
+- No clear purpose in single-app monorepo
+- Adds build complexity without benefit
+- Would need symlinks (already rejected)
+
+**Consequences**:
+- Data files are build artifacts (not in source control)
+- Clean repository root (no public/ directory)
+- `bun run build` generates outputs to `apps/web/public/data/`
+- Canonical URLs work: `/llms.txt` → `apps/web/public/llms.txt`
+
+**Implementation**:
+```typescript
+// scripts/build-data.ts
+const publicDir = new URL('../apps/web/public/', import.meta.url);
+
+writeFileSync(new URL('data/patterns.json', publicDir), JSON.stringify(patterns));
+writeFileSync(new URL('llms.txt', publicDir), generateLlmsTxt(patterns));
+writeFileSync(new URL('llms-full.txt', publicDir), generateLlmsFullTxt(patterns));
+writeFileSync(new URL('data/graph.json', publicDir), generateGraphJson(patterns));
+```
+
+**Revisit if**: Second app added to monorepo that needs same data files.
+
+### Decision 007: Citation Format for Patterns
+
+**Date**: 2026-01-14
+
+**Context**: Users need to cite patterns when using them in academic papers, blog posts, or documentation. Need a standard citation format.
+
+**Decision**: Use APA-style citation format with pattern metadata.
+
+**Citation Format**:
+```
+[Pattern Author(s)] ([Year]). [Pattern Title]. In *Awesome Agentic Patterns*. Retrieved [Date], from https://agentic-patterns.com/patterns/[slug]
+```
+
+**Example**:
+```
+Smith, J., & Doe, A. (2025). Reflection Loop. In *Awesome Agentic Patterns*. Retrieved January 14, 2026, from https://agentic-patterns.com/patterns/reflection
+```
+
+**BibTeX Format**:
+```bibtex
+@misc{agentic_patterns_[slug],
+  title = {[Pattern Title]},
+  author = {[Author(s)]},
+  year = {[Year]},
+  howpublished = {\\url{https://agentic-patterns.com/patterns/[slug]}},
+  note = {Awesome Agentic Patterns}
+}
+```
+
+**Implementation**:
+- Add "Cite this pattern" button on pattern pages
+- Copy citation to clipboard in both APA and BibTeX formats
+- Include retrieval date in citation
+- Use `updated_at` field for year if available, otherwise use current year
+
+**Rationale**:
+- APA is widely recognized in academic and technical writing
+- BibTeX support for LaTeX users
+- Stable URLs ensure citations remain valid
+- Author attribution maintained from pattern frontmatter
+
+**Consequences**:
+- Patterns are citable in academic work
+- Credit goes to original pattern authors
+- Standard format improves consistency
+
+**Revisit if**: Community requests additional citation formats (MLA, Chicago, etc.).
+
+## Acceptance Criteria
+- Every pattern has a stable URL and renders with full metadata.
+- `llms.txt` and `llms-full.txt` exist and are up to date.
+- Pattern pages support copy as Markdown and JSON.
+- Search, filters, compare, and graph features work on desktop and mobile.
+- New site passes accessibility and performance targets.
+
+## Open Questions
+- None.

@@ -1,11 +1,24 @@
 ---
 title: PII Tokenization
 status: established
-authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Anthropic Engineering Team"]
+authors:
+  - Nikola Balic (@nibzard)
+based_on:
+  - Anthropic Engineering Team
 category: Security & Safety
-source: "https://www.anthropic.com/engineering/code-execution-with-mcp"
-tags: [privacy, pii, security, mcp, data-protection]
+source: 'https://www.anthropic.com/engineering/code-execution-with-mcp'
+tags:
+  - privacy
+  - pii
+  - security
+  - mcp
+  - data-protection
+slug: pii-tokenization
+id: pii-tokenization
+summary: "Replaces PII in tool results with placeholder tokens before the model sees them and restores the real values in outgoing tool calls"
+signals: ["Agent workflows handle customer, HR, or medical records", "Compliance rules such as GDPR, HIPAA, or CCPA apply", "Agent routes data between tools without needing to read raw values"]
+anti_signals: ["Agent must reason over the actual content of the sensitive values", "Data contains no PII", "Tokenization would replace access controls and encryption instead of adding to them"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem
@@ -76,11 +89,13 @@ send_email(
    - Regex patterns for common PII (email, phone, SSN, credit cards)
    - Named entity recognition models for names, addresses
    - Custom rules for domain-specific sensitive data
+   - Hybrid approach: regex for fast path (< 5ms), ML for semantic PII (50-200ms)
 
 2. **Token mapping storage:**
    - Secure mapping of tokens to real values
    - Session-scoped or request-scoped lifetime
    - Encryption at rest if persistent
+   - Format-preserving tokenization maintains data structure for validation
 
 3. **Untokenization in tool calls:**
    - Scan outgoing tool call parameters
@@ -116,9 +131,14 @@ Most effective when implemented in the MCP client layer, so it's transparent to 
 - Won't catch domain-specific sensitive data without custom rules
 - Contextual PII (e.g., "my address is...") may leak before tokenization
 - Not a substitute for proper access controls and encryption
+- Tokenization is pseudonymization, not anonymization—under GDPR Article 4(5), tokenized data remains personal data
+- Multiple tokenized fields can be combined to reveal identities (composition effects)
 
 ## References
 
 * Anthropic Engineering: Code Execution with MCP (2024)
-* GDPR Guidelines on Pseudonymization
+* Microsoft Presidio: Open-source PII detection and anonymization framework
+* GDPR Article 4(5): Pseudonymization definition
 * NIST Privacy Framework
+
+- Primary source: https://www.anthropic.com/engineering/code-execution-with-mcp

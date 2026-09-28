@@ -1,16 +1,20 @@
 ---
 title: "Variance-Based RL Sample Selection"
-status: emerging
+status: validated-in-production
 authors: ["Nikola Balic (@nibzard)"]
 based_on: ["Theo (OpenAI Solutions Architect)", "Prashant (OpenAI RFT Team)"]
 category: "Learning & Adaptation"
 source: "https://youtu.be/1s_7RMG4O4U"
 tags: [reinforcement-learning, sample-efficiency, variance, data-quality, agent-rft]
+summary: "Runs the base model several times per sample and trains RL only on samples with score variance, skipping ones that are always right or always wrong"
+signals: ["Planning reinforcement fine-tuning on a limited budget", "Dataset may contain many samples with no learning signal", "Need to estimate RL improvement potential before training"]
+anti_signals: ["Very small dataset (under about 50 samples) with noisy variance estimates", "No budget for 3-5 baseline runs per sample"]
+updated_at: "2026-03-11"
 ---
 
 ## Problem
 
-Not all training samples are equally valuable for reinforcement learning:
+Not all training samples are equally valuable for reinforcement learning. This pattern builds on **Prioritized Experience Replay** (Schaul et al., 2016), which introduced TD-error-based sample prioritization for value learning.
 
 - **Zero-variance samples**: Model gets same score every time (always correct or always wrong) → no learning signal
 - **Wasted compute**: Training on samples where the model has no uncertainty wastes expensive RL exploration
@@ -314,6 +318,11 @@ After 10 steps of agent RFT:
 
 The model improved toward the best-of-3 ceiling while also becoming more efficient.
 
+**Other Validated Use Cases:**
+
+- **Ambience Healthcare - ICD-10 Coding**: F1 score 0.52 → 0.57 (+9.6%), 18% latency reduction
+- **Cognition (Devon AI) - File Planning**: 50% reduction in planning tool calls (8-10 → 4)
+
 ## Trade-offs
 
 **Pros:**
@@ -334,4 +343,5 @@ The model improved toward the best-of-3 ceiling while also becoming more efficie
 
 - [OpenAI Build Hour: Agent RFT - Variance Analysis Demo (November 2025)](https://youtu.be/1s_7RMG4O4U)
 - [Prior RFT Build Hour with Prashant](https://www.youtube.com/openai-build-hours)
+- [Prioritized Experience Replay (Schaul et al., ICLR 2016)](https://arxiv.org/abs/1511.05952) - Foundation paper introducing TD-error-based sample prioritization
 - Related patterns: Agent Reinforcement Fine-Tuning, Inference-Time Scaling

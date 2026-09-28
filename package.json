@@ -2,7 +2,31 @@
   "name": "awesome-agentic-patterns-worker",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "test": "bun test apps/web/src",
+    "validate:patterns": "bun scripts/validate-patterns.ts patterns",
+    "validate:patterns:content": "bun scripts/validate-patterns.ts patterns --check-content",
+    "build:data": "bun scripts/build-data.ts",
+    "migrate:patterns": "bun scripts/migrate-patterns.ts",
+    "migrate:patterns:dry": "bun scripts/migrate-patterns.ts --dry-run",
+    "dev": "bun --cwd apps/web dev",
+    "build": "bun scripts/build-data.ts && bun --cwd apps/web build && rm -rf .vercel/output && mkdir -p .vercel && cp -R apps/web/.vercel/output .vercel/output",
+    "preview": "bun --cwd apps/web preview",
+    "prepare": "husky"
+  },
   "devDependencies": {
+    "@types/mdast": "^4.0.4",
+    "husky": "^9.1.7",
     "wrangler": "^4.18.0"
+  },
+  "dependencies": {
+    "gray-matter": "^4.0.3",
+    "markdown-it": "^14.1.0",
+    "rss": "^1.2.2",
+    "unist-util-visit": "^5.0.0",
+    "xmlbuilder2": "^3.1.1"
   }
 }

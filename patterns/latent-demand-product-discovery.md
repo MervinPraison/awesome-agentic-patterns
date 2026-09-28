@@ -1,11 +1,26 @@
 ---
 title: Latent Demand Product Discovery
 status: best-practice
-authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Boris Cherny (Anthropic)", "Meta Product Teams"]
-category: "UX & Collaboration"
-source: "https://every.to/podcast/transcript-how-to-use-claude-code-like-the-people-who-built-it"
-tags: [product-discovery, extensibility, hackable-products, power-users, latent-demand]
+authors:
+  - Nikola Balic (@nibzard)
+based_on:
+  - Boris Cherny (Anthropic)
+  - Meta Product Teams
+category: UX & Collaboration
+source: >-
+  https://every.to/podcast/transcript-how-to-use-claude-code-like-the-people-who-built-it
+tags:
+  - product-discovery
+  - extensibility
+  - hackable-products
+  - power-users
+  - latent-demand
+slug: latent-demand-product-discovery
+id: latent-demand-product-discovery
+summary: "Builds hackable, extensible products, watches how power users repurpose them, and turns the most frequent workarounds into supported features"
+signals: ["Product can expose hooks, plugins, or configuration to users", "Unclear which features have real demand", "Analytics can detect unexpected usage patterns"]
+anti_signals: ["No analytics or monitoring to detect usage patterns", "Power user behavior does not represent mainstream needs"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem

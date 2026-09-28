@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+.astro/
+.vercel/
+
+# Lock files
+package-lock.json
+bun.lock
+yarn.lock
+pnpm-lock.yaml
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Generated files (emitted by scripts/build-data.ts — keep build-data format, do not reformat)
+public/patterns.json
+public/graph.json
+public/llms.txt
+public/llms-full.txt
+public/sitemap.xml
+public/rss.xml
+public/patterns/
+public/data/
+public/pagefind/
+src/data/github-stars.json

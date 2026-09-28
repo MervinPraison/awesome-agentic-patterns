@@ -1,0 +1,554 @@
+// ABOUTME: Generates all site data (pattern JSON, graph, README TOC, llms.txt, rss, sitemap) from patterns/*.md.
+// ABOUTME: All inputs must be deterministic (front-matter updated_at, no clock reads) so CI can diff the output.
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import matter from 'gray-matter';
+import RSS from 'rss';
+import { create } from 'xmlbuilder2';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const repoRoot = path.resolve(__dirname, '..');
+
+const patternsDir = path.join(repoRoot, 'patterns');
+const readmePath = path.join(repoRoot, 'README.md');
+const publicDir = path.join(repoRoot, 'apps', 'web', 'public');
+const dataDir = path.join(publicDir, 'data');
+const dataPatternsDir = path.join(dataDir, 'patterns');
+const legacyPatternsDir = path.join(publicDir, 'patterns');
+
+const SITE_URL = 'https://agentic-patterns.com';
+
+const ASSET_EXTENSIONS = new Set([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.svg',
+  '.webp',
+]);
+
+const README_TOC_START = '<!-- AUTO-GENERATED TOC START -->';
+const README_TOC_END = '<!-- AUTO-GENERATED TOC END -->';
+const README_PATTERNS_START = '<!-- AUTO-GENERATED PATTERNS START -->';
+const README_PATTERNS_END = '<!-- AUTO-GENERATED PATTERNS END -->';
+
+const CATEGORY_ORDER = [
+  'Context & Memory',
+  'Feedback Loops',
+  'Learning & Adaptation',
+  'Orchestration & Control',
+  'Reliability & Eval',
+  'Security & Safety',
+  'Tool Use & Environment',
+  'UX & Collaboration',
+] as const;
+
+const CATEGORY_DESCRIPTIONS: Record<string, string> = {
+  'Context & Memory': 'Sliding-window curation, vector cache, episodic memory',
+  'Feedback Loops': 'Compilers, CI, human review, self-healing retries',
+  'Learning & Adaptation': 'Agent RFT, skill libraries, variance-based RL',
+  'Orchestration & Control': 'Task decomposition, sub-agent spawning, tool routing',
+  'Reliability & Eval': 'Guardrails, eval harnesses, logging, reproducibility',
+  'Security & Safety': 'Isolated VMs, PII tokenization, security scanning',
+  'Tool Use & Environment': 'Shell, browser, DB, Playwright, sandbox tricks',
+  'UX & Collaboration': 'Prompt hand-offs, staged commits, async background agents',
+};
+
+interface ParsedPattern {
+  title: string;
+  status: string;
+  authors: string[];
+  based_on?: string[];
+  category: string;
+  source: string;
+  tags: string[];
+  slug: string;
+  id: string;
+  summary?: string;
+  maturity?: string;
+  complexity?: string;
+  effort?: string;
+  impact?: string;
+  signals?: string[];
+  anti_signals?: string[];
+  prerequisites?: string[];
+  related?: string[];
+  anti_patterns?: string[];
+  tools?: string[];
+  domains?: string[];
+  updated_at: string;
+  excerpt?: string;
+  body: string;
+}
+
+function slugify(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
+function replaceBetweenMarkers(
+  source: string,
+  startMarker: string,
+  endMarker: string,
+  replacement: string
+): string {
+  const startIndex = source.indexOf(startMarker);
+  const endIndex = source.indexOf(endMarker);
+
+  if (startIndex === -1 || endIndex === -1 || endIndex < startIndex) {
+    throw new Error(`Could not find README markers: ${startMarker} ... ${endMarker}`);
+  }
+
+  const before = source.slice(0, startIndex + startMarker.length);
+  const after = source.slice(endIndex);
+  return `${before}\n${replacement}\n${after}`;
+}
+
+function toStringArray(value: unknown, fallback?: string[]): string[] | undefined {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item));
+  }
+  if (typeof value === 'string') {
+    return [value];
+  }
+  return fallback;
+}
+
+function extractSection(body: string, sectionName: string): string | null {
+  const regex = new RegExp(`## ${sectionName}\\n([\\s\\S]*?)(?=## |$)`, 'i');
+  const match = body.match(regex);
+  return match ? match[1].trim() : null;
+}
+
+function extractSectionWithHeading(body: string, sectionName: string): string | null {
+  const section = extractSection(body, sectionName);
+  return section ? `\n## ${sectionName}\n${section}` : null;
+}
+
+function deriveSummary(body: string): string | undefined {
+  const problemSection = extractSection(body, 'Problem');
+  if (!problemSection) return undefined;
+
+  const withoutCode = problemSection.replace(/```[\s\S]*?```/g, ' ');
+  const cleaned = withoutCode
+    .replace(/[#*_>`-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (!cleaned) return undefined;
+
+  const sentenceMatch = cleaned.match(/(.+?[.!?])\s/);
+  return sentenceMatch ? sentenceMatch[1] : cleaned.slice(0, 160);
+}
+
+function parsePatternFile(filePath: string): ParsedPattern {
+  const raw = fs.readFileSync(filePath, 'utf-8');
+  const { data, content } = matter(raw);
+  const fileSlug = path.basename(filePath, path.extname(filePath));
+
+  const title = (data.title as string) || fileSlug;
+  const slug = (data.slug as string) || fileSlug;
+  const id = (data.id as string) || slugify(title);
+  const summary = (data.summary as string) || deriveSummary(content);
+  const updatedAt = data.updated_at as string | undefined;
+  if (!updatedAt || !/^\d{4}-\d{2}-\d{2}$/.test(updatedAt)) {
+    throw new Error(
+      `${filePath}: front matter must include updated_at in YYYY-MM-DD form. ` +
+        'File mtimes differ between machines, so generated data needs an explicit date.'
+    );
+  }
+
+  const excerpt = extractSectionWithHeading(content, 'Problem') || '';
+
+  return {
+    title,
+    status: (data.status as string) || 'proposed',
+    authors: toStringArray(data.authors, []) || [],
+    based_on: toStringArray(data.based_on),
+    category: (data.category as string) || 'Uncategorized',
+    source: (data.source as string) || '',
+    tags: toStringArray(data.tags, []) || [],
+    slug,
+    id,
+    summary,
+    maturity: data.maturity as string | undefined,
+    complexity: data.complexity as string | undefined,
+    effort: data.effort as string | undefined,
+    impact: data.impact as string | undefined,
+    signals: toStringArray(data.signals),
+    anti_signals: toStringArray(data.anti_signals),
+    prerequisites: toStringArray(data.prerequisites),
+    related: toStringArray(data.related),
+    anti_patterns: toStringArray(data.anti_patterns),
+    tools: toStringArray(data.tools),
+    domains: toStringArray(data.domains),
+    updated_at: updatedAt,
+    excerpt,
+    body: content,
+  };
+}
+
+function parseAllPatterns(): ParsedPattern[] {
+  const files = fs
+    .readdirSync(patternsDir)
+    .filter((file) => file.endsWith('.md') && file !== 'TEMPLATE.md');
+
+  return files.map((file) => parsePatternFile(path.join(patternsDir, file)));
+}
+
+function groupPatternsByCategory(patterns: ParsedPattern[]): Array<[string, ParsedPattern[]]> {
+  const grouped = new Map<string, ParsedPattern[]>();
+
+  patterns.forEach((pattern) => {
+    const existing = grouped.get(pattern.category) || [];
+    existing.push(pattern);
+    grouped.set(pattern.category, existing);
+  });
+
+  const orderedCategories = [
+    ...CATEGORY_ORDER.filter((category) => grouped.has(category)),
+    ...Array.from(grouped.keys())
+      .filter((category) => !CATEGORY_ORDER.includes(category as (typeof CATEGORY_ORDER)[number]))
+      .sort((a, b) => a.localeCompare(b)),
+  ];
+
+  return orderedCategories.map((category) => [
+    category,
+    (grouped.get(category) || []).sort((a, b) => a.title.localeCompare(b.title)),
+  ]);
+}
+
+function generateReadmeToc(patterns: ParsedPattern[]): string {
+  const lines = [
+    '|  Category                                              |  What you\'ll find                                         |',
+    '| ------------------------------------------------------ | --------------------------------------------------------- |',
+  ];
+
+  groupPatternsByCategory(patterns).forEach(([category]) => {
+    const anchor = slugify(category);
+    const description = CATEGORY_DESCRIPTIONS[category] || 'Patterns in this category';
+    const categoryCell = `[**${category}**](#${anchor})`;
+    lines.push(`| ${categoryCell.padEnd(53)} | ${description.padEnd(57)} |`);
+  });
+
+  return lines.join('\n');
+}
+
+function generateReadmePatternCatalog(patterns: ParsedPattern[]): string {
+  const sections: string[] = [];
+
+  groupPatternsByCategory(patterns).forEach(([category, categoryPatterns], index) => {
+    if (index > 0) {
+      sections.push('');
+    }
+
+    sections.push(`### <a name="${slugify(category)}"></a>${category}`);
+    sections.push('');
+
+    categoryPatterns.forEach((pattern) => {
+      sections.push(`- [${pattern.title}](patterns/${pattern.slug}.md)`);
+    });
+  });
+
+  return sections.join('\n');
+}
+
+function updateReadme(patterns: ParsedPattern[]): void {
+  const currentReadme = fs.readFileSync(readmePath, 'utf-8');
+  const withToc = replaceBetweenMarkers(
+    currentReadme,
+    README_TOC_START,
+    README_TOC_END,
+    generateReadmeToc(patterns)
+  );
+  const withCatalog = replaceBetweenMarkers(
+    withToc,
+    README_PATTERNS_START,
+    README_PATTERNS_END,
+    `\n${generateReadmePatternCatalog(patterns)}\n`
+  );
+
+  fs.writeFileSync(readmePath, withCatalog);
+}
+
+function generateLlmsTxt(patterns: ParsedPattern[]): string {
+  const lines = [
+    '# Awesome Agentic Patterns',
+    '',
+    'A curated catalogue of AI agent design patterns.',
+    '',
+    `Every pattern is also available as Markdown at ${SITE_URL}/patterns/<slug>.md. Full text of all patterns: ${SITE_URL}/llms-full.txt. Usage notes for agents: ${SITE_URL}/agents.`,
+    '',
+    '## Patterns',
+    '',
+  ];
+
+  patterns.forEach((pattern) => {
+    const summary = pattern.summary || '';
+    lines.push(`### ${pattern.slug}`);
+    lines.push(`${pattern.title}: ${summary}`.trim());
+    lines.push(`URL: ${SITE_URL}/patterns/${pattern.slug}`);
+    lines.push(`Markdown: ${SITE_URL}/patterns/${pattern.slug}.md`);
+    lines.push('');
+  });
+
+  return lines.join('\n');
+}
+
+function generateLlmsFullTxt(patterns: ParsedPattern[]): string {
+  const lines = ['# Awesome Agentic Patterns - Full Content', ''];
+
+  patterns.forEach((pattern, index) => {
+    lines.push(`## ${pattern.title}`);
+    lines.push('');
+    lines.push(`**Status:** ${pattern.status}`);
+    lines.push(`**Category:** ${pattern.category}`);
+    lines.push(`**Authors:** ${pattern.authors.join(', ')}`);
+    lines.push(`**Source:** ${pattern.source}`);
+    lines.push('');
+    lines.push(pattern.body.trim());
+    lines.push('');
+    if (index < patterns.length - 1) {
+      lines.push('---');
+      lines.push('');
+    }
+  });
+
+  return lines.join('\n');
+}
+
+function generateSitemapXml(patterns: ParsedPattern[]): string {
+  const urlset = create({ version: '1.0', encoding: 'UTF-8' }).ele('urlset', {
+    xmlns: 'http://www.sitemaps.org/schemas/sitemap/0.9',
+  });
+
+  const addUrl = (loc: string, lastmod?: string) => {
+    const url = urlset.ele('url');
+    url.ele('loc').txt(loc);
+    if (lastmod) {
+      url.ele('lastmod').txt(lastmod);
+    }
+  };
+
+  addUrl(`${SITE_URL}/`);
+  addUrl(`${SITE_URL}/patterns`);
+  addUrl(`${SITE_URL}/compare`);
+  addUrl(`${SITE_URL}/decision`);
+  addUrl(`${SITE_URL}/graph`);
+  addUrl(`${SITE_URL}/packs`);
+  addUrl(`${SITE_URL}/guides`);
+
+  patterns.forEach((pattern) => {
+    addUrl(`${SITE_URL}/patterns/${pattern.slug}`, pattern.updated_at);
+  });
+
+  return urlset.end({ prettyPrint: true });
+}
+
+function generateRssFeed(patterns: ParsedPattern[]): string {
+  const feed = new RSS({
+    title: 'Awesome Agentic Patterns',
+    description: 'New and updated AI agent design patterns.',
+    site_url: SITE_URL,
+    feed_url: `${SITE_URL}/rss.xml`,
+  });
+
+  const sorted = [...patterns].sort((a, b) => {
+    return (b.updated_at || '').localeCompare(a.updated_at || '');
+  });
+
+  sorted.slice(0, 20).forEach((pattern) => {
+    feed.item({
+      title: pattern.title,
+      description: pattern.summary || '',
+      url: `${SITE_URL}/patterns/${pattern.slug}`,
+      date: new Date(pattern.updated_at),
+      categories: [pattern.category, ...pattern.tags],
+    });
+  });
+
+  const xml = feed.xml({ indent: true });
+
+  // The rss library always writes the current time as lastBuildDate. Replace it
+  // with the newest pattern updated_at so two runs on the same input agree byte for byte.
+  const newestUpdated = patterns.reduce((max, pattern) => {
+    return pattern.updated_at > max ? pattern.updated_at : max;
+  }, '1970-01-01');
+  const lastBuildDate = new Date(newestUpdated).toUTCString();
+
+  return xml.replace(/<lastBuildDate>[^<]*<\/lastBuildDate>/, `<lastBuildDate>${lastBuildDate}</lastBuildDate>`);
+}
+
+function copyImageAssets(): void {
+  const assets = fs.readdirSync(patternsDir).filter((file) => {
+    return ASSET_EXTENSIONS.has(path.extname(file).toLowerCase());
+  });
+
+  if (assets.length === 0) return;
+
+  fs.mkdirSync(legacyPatternsDir, { recursive: true });
+
+  assets.forEach((file) => {
+    fs.copyFileSync(path.join(patternsDir, file), path.join(legacyPatternsDir, file));
+  });
+}
+
+function writeOutputs(patterns: ParsedPattern[]): void {
+  fs.mkdirSync(publicDir, { recursive: true });
+  fs.mkdirSync(dataDir, { recursive: true });
+  fs.mkdirSync(dataPatternsDir, { recursive: true });
+  fs.mkdirSync(legacyPatternsDir, { recursive: true });
+
+  const nodeIds = new Set(patterns.map((pattern) => pattern.id));
+
+  const patternIndex = patterns.map((pattern) => ({
+    title: pattern.title,
+    status: pattern.status,
+    authors: pattern.authors,
+    based_on: pattern.based_on,
+    category: pattern.category,
+    source: pattern.source,
+    tags: pattern.tags,
+    slug: pattern.slug,
+    id: pattern.id,
+    summary: pattern.summary,
+    maturity: pattern.maturity,
+    complexity: pattern.complexity,
+    effort: pattern.effort,
+    impact: pattern.impact,
+    signals: pattern.signals,
+    anti_signals: pattern.anti_signals,
+    prerequisites: pattern.prerequisites,
+    related: pattern.related,
+    anti_patterns: pattern.anti_patterns,
+    tools: pattern.tools,
+    domains: pattern.domains,
+    updated_at: pattern.updated_at,
+    excerpt: pattern.excerpt,
+  }));
+
+  const graph = {
+    nodes: patterns.map((pattern) => ({
+      id: pattern.id,
+      title: pattern.title,
+      category: pattern.category,
+      status: pattern.status,
+      slug: pattern.slug,
+      tags: pattern.tags,
+      summary: pattern.summary,
+      maturity: pattern.maturity,
+      domains: pattern.domains,
+    })),
+    edges: patterns.flatMap((pattern) => {
+      const relatedEdges =
+        pattern.related
+          ?.filter((id) => nodeIds.has(id))
+          .map((id) => ({ source: pattern.id, target: id, type: 'related' as const })) || [];
+      const antiEdges =
+        pattern.anti_patterns
+          ?.filter((id) => nodeIds.has(id))
+          .map((id) => ({ source: pattern.id, target: id, type: 'anti-pattern' as const })) || [];
+      return [...relatedEdges, ...antiEdges];
+    }),
+  };
+
+  fs.writeFileSync(path.join(publicDir, 'patterns.json'), JSON.stringify(patternIndex, null, 2));
+  fs.writeFileSync(path.join(dataDir, 'patterns.json'), JSON.stringify(patternIndex, null, 2));
+  fs.writeFileSync(path.join(publicDir, 'graph.json'), JSON.stringify(graph, null, 2));
+  fs.writeFileSync(path.join(dataDir, 'graph.json'), JSON.stringify(graph, null, 2));
+
+  patterns.forEach((pattern) => {
+    const patternJson = {
+      title: pattern.title,
+      status: pattern.status,
+      authors: pattern.authors,
+      based_on: pattern.based_on,
+      category: pattern.category,
+      source: pattern.source,
+      tags: pattern.tags,
+      slug: pattern.slug,
+      id: pattern.id,
+      summary: pattern.summary,
+      maturity: pattern.maturity,
+      complexity: pattern.complexity,
+      effort: pattern.effort,
+      impact: pattern.impact,
+      signals: pattern.signals,
+      anti_signals: pattern.anti_signals,
+      prerequisites: pattern.prerequisites,
+      related: pattern.related,
+      anti_patterns: pattern.anti_patterns,
+      tools: pattern.tools,
+      domains: pattern.domains,
+      updated_at: pattern.updated_at,
+      body: pattern.body,
+    };
+
+    fs.writeFileSync(
+      path.join(legacyPatternsDir, `${pattern.slug}.json`),
+      JSON.stringify(patternJson, null, 2)
+    );
+    fs.writeFileSync(
+      path.join(dataPatternsDir, `${pattern.slug}.json`),
+      JSON.stringify(patternJson, null, 2)
+    );
+  });
+
+  fs.writeFileSync(path.join(publicDir, 'llms.txt'), generateLlmsTxt(patterns));
+  fs.writeFileSync(path.join(publicDir, 'llms-full.txt'), generateLlmsFullTxt(patterns));
+  fs.writeFileSync(path.join(publicDir, 'sitemap.xml'), generateSitemapXml(patterns));
+  fs.writeFileSync(path.join(publicDir, 'rss.xml'), generateRssFeed(patterns));
+}
+
+async function main(): Promise<void> {
+  const args = new Set(process.argv.slice(2));
+  const patterns = parseAllPatterns().sort((a, b) => a.title.localeCompare(b.title));
+  updateReadme(patterns);
+
+  if (args.has('--readme-only')) {
+    return;
+  }
+
+  copyImageAssets();
+  writeOutputs(patterns);
+  await fetchGithubStars();
+}
+
+async function fetchGithubStars(): Promise<void> {
+  const dataDir = path.join(repoRoot, 'apps', 'web', 'src', 'data');
+  const outputPath = path.join(dataDir, 'github-stars.json');
+
+  try {
+    const response = await fetch('https://api.github.com/repos/nibzard/awesome-agentic-patterns', {
+      headers: { Accept: 'application/vnd.github+json' },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!response.ok) throw new Error(`GitHub API returned ${response.status}`);
+    const { stargazers_count: count } = await response.json();
+    if (!Number.isSafeInteger(count) || count < 0) throw new Error('Invalid GitHub star count');
+
+    const formatted = new Intl.NumberFormat('en-US', {
+      notation: count >= 1000 ? 'compact' : 'standard',
+      maximumFractionDigits: 1,
+    }).format(count);
+
+    fs.writeFileSync(outputPath, JSON.stringify({ count, formatted }));
+    console.log(`[build-data] GitHub stars: ${formatted}`);
+  } catch (err) {
+    console.warn('[build-data] Could not fetch GitHub stars:', err instanceof Error ? err.message : err);
+    if (fs.existsSync(outputPath)) {
+      console.warn('[build-data] Using cached value');
+    } else {
+      fs.writeFileSync(outputPath, JSON.stringify({ count: 0, formatted: '' }));
+      console.warn('[build-data] Wrote placeholder github-stars.json');
+    }
+  }
+}
+
+await main();

@@ -1,0 +1,4 @@
+# Run linting and formatting on apps/web
+cd apps/web
+bun run lint:fix
+bun run format

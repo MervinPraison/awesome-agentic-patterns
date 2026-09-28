@@ -1,11 +1,28 @@
 ---
 title: Agentic Search Over Vector Embeddings
 status: best-practice
-authors: ["Nikola Balic (@nibzard)"]
-based_on: ["Cat Wu (Anthropic)", "Boris Cherny (Anthropic)"]
-category: "Tool Use & Environment"
-source: "https://every.to/podcast/transcript-how-to-use-claude-code-like-the-people-who-built-it"
-tags: [search, vector-embeddings, bash, grep, RAG, agentic-RAG, maintenance]
+authors:
+  - Nikola Balic (@nibzard)
+based_on:
+  - Cat Wu (Anthropic)
+  - Boris Cherny (Anthropic)
+category: Tool Use & Environment
+source: >-
+  https://every.to/podcast/transcript-how-to-use-claude-code-like-the-people-who-built-it
+tags:
+  - search
+  - vector-embeddings
+  - bash
+  - grep
+  - RAG
+  - agentic-RAG
+  - maintenance
+slug: agentic-search-over-vector-embeddings
+id: agentic-search-over-vector-embeddings
+summary: "Replaces vector indexes with agent-driven grep, find, and file traversal that searches current file state on demand and refines iteratively"
+signals: ["Codebase changes often or has local uncommitted changes", "Team has no dedicated vector infrastructure", "Security-sensitive deployment needs fewer dependencies"]
+anti_signals: ["Codebase has millions of files", "Queries need semantic matching across different terms", "Model is not capable enough to search iteratively"]
+updated_at: '2026-01-05'
 ---
 
 ## Problem
